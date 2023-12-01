@@ -8,15 +8,11 @@ pub fn day1(input: &str) -> color_eyre::Result<(u32, u32)> {
 
 fn part1(input: &str) -> color_eyre::Result<u32> {
     let sum = input.lines().fold(0, |sum, l| {
-        let mut digits = l.chars().filter(|c| c.is_ascii_digit());
-        let first = digits.next();
-        let last = digits.last().or(first);
+        let digits = l.chars().filter_map(|c| c.to_digit(10));
+        let first = digits.clone().next().unwrap();
+        let last = digits.last().unwrap();
 
-        let mut s = first.unwrap().to_string();
-        s.push(last.unwrap());
-
-        let num: u32 = s.parse().unwrap();
-        sum + num
+        sum + first * 10 + last
     });
     Ok(sum)
 }
