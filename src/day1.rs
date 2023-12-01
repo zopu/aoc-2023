@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 const DIGITS: [&str; 10] = [
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
 ];
@@ -7,31 +9,37 @@ pub fn day1(input: &str) -> color_eyre::Result<(u32, u32)> {
 }
 
 fn part1(input: &str) -> color_eyre::Result<u32> {
-    let sum = input.lines().fold(0, |sum, l| {
-        let digits = l.chars().filter_map(|c| c.to_digit(10));
-        let first = digits.clone().next().unwrap();
-        let last = digits.last().unwrap();
+    let sum = input
+        .par_lines()
+        .map(|l| {
+            let digits = l.chars().filter_map(|c| c.to_digit(10));
+            let first = digits.clone().next().unwrap();
+            let last = digits.last().unwrap();
 
-        sum + first * 10 + last
-    });
+            first * 10 + last
+        })
+        .sum();
     Ok(sum)
 }
 
 fn part2(input: &str) -> color_eyre::Result<u32> {
-    let sum = input.lines().fold(0, |sum, l| {
-        let mut digits = Vec::<u32>::new();
-        let mut it = l.chars();
-        loop {
-            if let Some(d) = leading_digit(it.as_str()) {
-                digits.push(d);
+    let sum = input
+        .par_lines()
+        .map(|l| {
+            let mut digits = Vec::<u32>::new();
+            let mut it = l.chars();
+            loop {
+                if let Some(d) = leading_digit(it.as_str()) {
+                    digits.push(d);
+                }
+                let next = it.next();
+                if next.is_none() {
+                    break;
+                }
             }
-            let next = it.next();
-            if next.is_none() {
-                break;
-            }
-        }
-        sum + digits[0] * 10 + digits[digits.len() - 1]
-    });
+            digits[0] * 10 + digits[digits.len() - 1]
+        })
+        .sum();
     Ok(sum)
 }
 
