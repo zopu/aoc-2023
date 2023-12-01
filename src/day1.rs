@@ -7,8 +7,7 @@ pub fn day1(input: &str) -> color_eyre::Result<(u32, u32)> {
 }
 
 fn part1(input: &str) -> color_eyre::Result<u32> {
-    let mut sum: u32 = 0;
-    for l in input.lines() {
+    let sum = input.lines().fold(0, |sum, l| {
         let mut digits = l.chars().filter(|c| c.is_ascii_digit());
         let first = digits.next();
         let last = digits.last().or(first);
@@ -17,14 +16,13 @@ fn part1(input: &str) -> color_eyre::Result<u32> {
         s.push(last.unwrap());
 
         let num: u32 = s.parse().unwrap();
-        sum += num;
-    }
+        sum + num
+    });
     Ok(sum)
 }
 
 fn part2(input: &str) -> color_eyre::Result<u32> {
-    let mut sum: u32 = 0;
-    for l in input.lines() {
+    let sum = input.lines().fold(0, |sum, l| {
         let mut s = l;
         let mut digits = Vec::<u32>::new();
         while !s.is_empty() {
@@ -34,8 +32,8 @@ fn part2(input: &str) -> color_eyre::Result<u32> {
             s = &s[1..];
         }
         let n = digits[0] * 10 + digits[digits.len() - 1];
-        sum += n;
-    }
+        sum + n
+    });
     Ok(sum)
 }
 
