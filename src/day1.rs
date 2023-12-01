@@ -19,16 +19,18 @@ fn part1(input: &str) -> color_eyre::Result<u32> {
 
 fn part2(input: &str) -> color_eyre::Result<u32> {
     let sum = input.lines().fold(0, |sum, l| {
-        let mut s = l;
         let mut digits = Vec::<u32>::new();
-        while !s.is_empty() {
-            if let Some(d) = leading_digit(s) {
+        let mut it = l.chars();
+        loop {
+            if let Some(d) = leading_digit(it.as_str()) {
                 digits.push(d);
             }
-            s = &s[1..];
+            let next = it.next();
+            if next.is_none() {
+                break;
+            }
         }
-        let n = digits[0] * 10 + digits[digits.len() - 1];
-        sum + n
+        sum + digits[0] * 10 + digits[digits.len() - 1]
     });
     Ok(sum)
 }
