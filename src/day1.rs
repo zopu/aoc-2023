@@ -58,22 +58,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_sample_part1() {
-        let input = std::fs::read_to_string("inputs/1/sample.txt").unwrap();
-        assert_eq!(142, part1(&input).unwrap());
+    fn test_sample_part1() -> color_eyre::Result<()> {
+        let input = std::fs::read_to_string("inputs/1/sample.txt")?;
+        assert_eq!(142, part1(&input)?);
+        Ok(())
     }
 
     #[test]
-    fn test_sample_part2() {
-        let input = std::fs::read_to_string("inputs/1/sample_part2.txt").unwrap();
-        assert_eq!(281, part2(&input).unwrap());
+    fn test_sample_part2() -> color_eyre::Result<()> {
+        let input = std::fs::read_to_string("inputs/1/sample_part2.txt")?;
+        assert_eq!(281, part2(&input)?);
+        Ok(())
     }
 
     #[test]
-    fn test_real() {
-        let input = std::fs::read_to_string("inputs/1/input.txt").unwrap();
-        let (p1, p2) = day1(&input).unwrap();
+    fn test_real() -> color_eyre::Result<()> {
+        let input = std::fs::read_to_string("inputs/1/input.txt")?;
+        let (p1, p2) = day1(&input)?;
         assert_eq!(55816, p1);
         assert_eq!(54980, p2);
+        Ok(())
     }
 }
