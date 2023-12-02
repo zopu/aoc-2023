@@ -1,6 +1,7 @@
-use std::cmp::max;
+use rayon::prelude::*;
 
 use color_eyre::eyre::eyre;
+use std::cmp::max;
 
 #[derive(Clone, Debug)]
 pub struct Set {
@@ -57,7 +58,7 @@ pub fn run(input: &str) -> color_eyre::Result<(u32, u32)> {
 
 fn part1(input: &str) -> color_eyre::Result<u32> {
     let sum: u32 = input
-        .lines()
+        .par_lines()
         .map(|l| {
             let parsed = parse::parse_game(l)
                 .map_err(|_| eyre!("Parse error"))
@@ -75,7 +76,7 @@ fn part1(input: &str) -> color_eyre::Result<u32> {
 
 fn part2(input: &str) -> color_eyre::Result<u32> {
     let sum: u32 = input
-        .lines()
+        .par_lines()
         .map(|l| {
             let parsed = parse::parse_game(l)
                 .map_err(|_| eyre!("Parse error"))
