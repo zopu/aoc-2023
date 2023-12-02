@@ -14,16 +14,10 @@ mod parse {
     use nom::branch::alt;
     use nom::bytes::complete::tag;
     use nom::character::complete::u32;
+    use nom::error::{Error, ErrorKind};
     use nom::multi::separated_list0;
     use nom::sequence::tuple;
     use nom::{combinator::value, sequence::separated_pair, IResult};
-
-    #[derive(Clone, Debug)]
-    pub enum Color {
-        Red,
-        Green,
-        Blue,
-    }
 
     pub fn parse_game(input: &str) -> IResult<&str, (u32, Vec<Set>)> {
         let (remaining, (_, num, _)) = tuple((tag("Game "), u32, tag(": ")))(input)?;
@@ -38,18 +32,19 @@ mod parse {
                 u32,
                 tag(" "),
                 alt((
-                    value(Color::Red, tag("red")),
-                    value(Color::Green, tag("green")),
-                    value(Color::Blue, tag("blue")),
+                    value('r', tag("red")),
+                    value('g', tag("green")),
+                    value('b', tag("blue")),
                 )),
             ),
         )(input)?;
         let mut set = Set { r: 0, g: 0, b: 0 };
         for v in color_vals {
             match v {
-                (n, Color::Red) => set.r = n,
-                (n, Color::Green) => set.g = n,
-                (n, Color::Blue) => set.b = n,
+                (n, 'r') => set.r = n,
+                (n, 'g') => set.g = n,
+                (n, 'b') => set.b = n,
+                _ => return Err(nom::Err::Error(Error::new("Not a color", ErrorKind::Fail))),
             }
         }
         Ok((remaining, set))
