@@ -18,7 +18,7 @@ fn main() -> color_eyre::Result<()> {
     let d2_start = Instant::now();
     let day2_input = std::fs::read_to_string("inputs/2/input.txt")?;
     let (p1, _p2) = day2::run(&day2_input)?;
-    assert_eq!(0, p1);
+    assert_eq!(2685, p1);
 
     let duration = Instant::now().duration_since(d2_start);
     println!("{:?} us day 2 runtime", duration.as_micros());
