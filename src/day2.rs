@@ -1,6 +1,4 @@
 use rayon::prelude::*;
-
-use color_eyre::eyre::eyre;
 use std::cmp::max;
 
 #[derive(Clone, Debug)]
@@ -40,11 +38,11 @@ mod parse {
             ),
         )(input)?;
         let mut set = Set { r: 0, g: 0, b: 0 };
-        for v in color_vals {
-            match v {
-                (n, 'r') => set.r = n,
-                (n, 'g') => set.g = n,
-                (n, 'b') => set.b = n,
+        for (n, color) in color_vals {
+            match color {
+                'r' => set.r = n,
+                'g' => set.g = n,
+                'b' => set.b = n,
                 _ => return Err(nom::Err::Error(Error::new("Not a color", ErrorKind::Fail))),
             }
         }
@@ -60,15 +58,11 @@ fn part1(input: &str) -> color_eyre::Result<u32> {
     let sum: u32 = input
         .par_lines()
         .map(|l| {
-            let parsed = parse::parse_game(l)
-                .map_err(|_| eyre!("Parse error"))
-                .unwrap();
-            for set in parsed.1 .1 {
-                if set.r > 12 || set.g > 13 || set.b > 14 {
-                    return 0;
-                }
+            let (_remaining, (n, sets)) = parse::parse_game(l).unwrap();
+            if sets.iter().any(|s| s.r > 12 || s.g > 13 || s.b > 14) {
+                return 0;
             }
-            parsed.1 .0
+            n
         })
         .sum();
     Ok(sum)
@@ -78,18 +72,12 @@ fn part2(input: &str) -> color_eyre::Result<u32> {
     let sum: u32 = input
         .par_lines()
         .map(|l| {
-            let parsed = parse::parse_game(l)
-                .map_err(|_| eyre!("Parse error"))
-                .unwrap();
-            let max = parsed
-                .1
-                 .1
-                .iter()
-                .fold(Set { r: 0, g: 0, b: 0 }, |acc, set| Set {
-                    r: max(acc.r, set.r),
-                    g: max(acc.g, set.g),
-                    b: max(acc.b, set.b),
-                });
+            let (_remaining, (_n, sets)) = parse::parse_game(l).unwrap();
+            let max = sets.iter().fold(Set { r: 0, g: 0, b: 0 }, |acc, set| Set {
+                r: max(acc.r, set.r),
+                g: max(acc.g, set.g),
+                b: max(acc.b, set.b),
+            });
             max.r * max.g * max.b
         })
         .sum();
