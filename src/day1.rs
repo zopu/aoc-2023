@@ -4,7 +4,7 @@ const DIGITS: [&str; 10] = [
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
 ];
 
-pub fn day1(input: &str) -> color_eyre::Result<(u32, u32)> {
+pub fn run(input: &str) -> color_eyre::Result<(u32, u32)> {
     Ok((part1(input)?, part2(input)?))
 }
 
@@ -80,7 +80,7 @@ mod tests {
     #[test]
     fn test_real() -> color_eyre::Result<()> {
         let input = std::fs::read_to_string("inputs/1/input.txt")?;
-        let (p1, p2) = day1(&input)?;
+        let (p1, p2) = run(&input)?;
         assert_eq!(55816, p1);
         assert_eq!(54980, p2);
         Ok(())
