@@ -1,5 +1,6 @@
 use std::cmp::min;
 
+#[derive(Clone)]
 struct Part {
     num: u32,
     line: usize,
@@ -22,12 +23,16 @@ fn part2(grid: &[Vec<char>], parts: &[Part]) -> color_eyre::Result<u32> {
     for (line_num, line) in grid.iter().enumerate() {
         for (i, c) in line.iter().enumerate() {
             if *c == '*' {
-                let adjacent_parts: Vec<_> = parts
+                let mut it = parts
                     .iter()
                     .filter(|p| is_adjacent(line_num, i, p))
-                    .collect();
-                if adjacent_parts.len() == 2 {
-                    sum += adjacent_parts[0].num * adjacent_parts[1].num;
+                    .enumerate();
+                if let Some((_i, frst)) = it.next().clone() {
+                    if let Some((count, lst)) = it.last() {
+                        if count == 1 {
+                            sum += frst.num * lst.num;
+                        }
+                    }
                 }
             }
         }
