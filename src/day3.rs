@@ -1,5 +1,7 @@
 use std::cmp::min;
 
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
+
 #[derive(Clone)]
 struct Part {
     num: u32,
@@ -19,24 +21,29 @@ fn part1(parts: &[Part]) -> color_eyre::Result<u32> {
 }
 
 fn part2(grid: &[Vec<char>], parts: &[Part]) -> color_eyre::Result<u32> {
-    let mut sum = 0;
-    for (line_num, line) in grid.iter().enumerate() {
-        for (i, c) in line.iter().enumerate() {
-            if *c == '*' {
-                let mut it = parts
-                    .iter()
-                    .filter(|p| is_adjacent(line_num, i, p))
-                    .enumerate();
-                if let Some((_i, frst)) = it.next() {
-                    if let Some((count, lst)) = it.last() {
-                        if count == 1 {
-                            sum += frst.num * lst.num;
+    let sum = grid
+        .par_iter()
+        .enumerate()
+        .map(|(line_num, line)| {
+            let mut line_sum = 0;
+            for (i, c) in line.iter().enumerate() {
+                if *c == '*' {
+                    let mut it = parts
+                        .iter()
+                        .filter(|p| is_adjacent(line_num, i, p))
+                        .enumerate();
+                    if let Some((_i, frst)) = it.next() {
+                        if let Some((count, lst)) = it.last() {
+                            if count == 1 {
+                                line_sum += frst.num * lst.num;
+                            }
                         }
                     }
                 }
             }
-        }
-    }
+            line_sum
+        })
+        .sum();
 
     Ok(sum)
 }
