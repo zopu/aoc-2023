@@ -1,26 +1,33 @@
 use std::cmp::min;
 
+struct Part {
+    num: u32,
+    line: usize,
+    start: usize,
+    end: usize,
+}
+
 pub fn run(input: &str) -> color_eyre::Result<(u32, u32)> {
     let grid: Vec<Vec<char>> = input.lines().map(|l| l.chars().collect()).collect();
     let parts = find_parts(&grid);
     Ok((part1(&parts)?, part2(&grid, &parts)?))
 }
 
-fn part1(parts: &[(u32, usize, usize, usize)]) -> color_eyre::Result<u32> {
-    Ok(parts.iter().map(|(n, _, _, _)| n).sum())
+fn part1(parts: &[Part]) -> color_eyre::Result<u32> {
+    Ok(parts.iter().map(|p| p.num).sum())
 }
 
-fn part2(grid: &[Vec<char>], parts: &[(u32, usize, usize, usize)]) -> color_eyre::Result<u32> {
+fn part2(grid: &[Vec<char>], parts: &[Part]) -> color_eyre::Result<u32> {
     let mut sum = 0;
     for (line_num, line) in grid.iter().enumerate() {
         for (i, c) in line.iter().enumerate() {
             if *c == '*' {
                 let adjacent_parts: Vec<_> = parts
                     .iter()
-                    .filter(|(_, l, st, end)| is_adjacent(line_num, i, *l, *st, *end))
+                    .filter(|p| is_adjacent(line_num, i, p))
                     .collect();
                 if adjacent_parts.len() == 2 {
-                    sum += adjacent_parts[0].0 * adjacent_parts[1].0;
+                    sum += adjacent_parts[0].num * adjacent_parts[1].num;
                 }
             }
         }
@@ -29,10 +36,9 @@ fn part2(grid: &[Vec<char>], parts: &[(u32, usize, usize, usize)]) -> color_eyre
     Ok(sum)
 }
 
-pub fn find_parts(grid: &[Vec<char>]) -> Vec<(u32, usize, usize, usize)> {
-    let mut v: Vec<(u32, usize, usize, usize)> = Vec::new();
+fn find_parts(grid: &[Vec<char>]) -> Vec<Part> {
+    let mut nums: Vec<Part> = Vec::new();
     for (line_num, l) in grid.iter().enumerate() {
-        let mut nums: Vec<(u32, usize, usize)> = Vec::new();
         let mut n = 0;
         let mut in_num = false;
         let mut num_start = 0;
@@ -51,22 +57,30 @@ pub fn find_parts(grid: &[Vec<char>]) -> Vec<(u32, usize, usize, usize)> {
                 }
                 (None, true) => {
                     // End the number
-                    nums.push((n, num_start, i));
+                    nums.push(Part {
+                        num: n,
+                        line: line_num,
+                        start: num_start,
+                        end: i,
+                    });
                     in_num = false;
                 }
             }
         }
         if in_num {
-            nums.push((n, num_start, l.len()));
+            nums.push(Part {
+                num: n,
+                line: line_num,
+                start: num_start,
+                end: l.len(),
+            });
         }
-
-        let it = nums
-            .iter()
-            .filter(|(_, start, end)| has_adjacent_special_chars(grid, line_num, *start, *end))
-            .map(|(n, start, end)| (*n, line_num, *start, *end));
-        v.extend(it);
     }
-    v
+    let filtered: Vec<Part> = nums
+        .into_iter()
+        .filter(|p| has_adjacent_special_chars(grid, p.line, p.start, p.end))
+        .collect();
+    filtered
 }
 
 pub fn has_adjacent_special_chars(
@@ -90,16 +104,10 @@ fn is_special(c: char) -> bool {
     !(c.is_ascii_digit() || c == '.')
 }
 
-fn is_adjacent(
-    line: usize,
-    col: usize,
-    part_line: usize,
-    part_start: usize,
-    part_end: usize,
-) -> bool {
-    (line as i32 - part_line as i32).abs() <= 1
-        && col as i32 >= part_start as i32 - 1
-        && col < part_end + 1
+fn is_adjacent(line: usize, col: usize, part: &Part) -> bool {
+    (line as i32 - part.line as i32).abs() <= 1
+        && col as i32 >= part.start as i32 - 1
+        && col < part.end + 1
 }
 
 #[cfg(test)]
