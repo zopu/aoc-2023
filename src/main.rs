@@ -2,6 +2,7 @@ use std::time::Instant;
 
 mod day1;
 mod day2;
+mod day3;
 
 #[derive(Debug)]
 struct AppArgs {
@@ -25,7 +26,13 @@ fn day2() -> color_eyre::Result<()> {
     Ok(())
 }
 
-const DAYS: [fn() -> color_eyre::Result<()>; 2] = [day1, day2];
+fn day3() -> color_eyre::Result<()> {
+    let day3_input = std::fs::read_to_string("inputs/3/input.txt")?;
+    let (_p1, _p2) = day3::run(&day3_input)?;
+    Ok(())
+}
+
+const DAYS: [fn() -> color_eyre::Result<()>; 3] = [day1, day2, day3];
 
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
@@ -53,7 +60,7 @@ fn run_all_days() -> color_eyre::Result<()> {
         let day_start = Instant::now();
         d()?;
         let duration = Instant::now().duration_since(day_start);
-        println!("{:?} us day {} runtime", duration.as_micros(), i);
+        println!("{:?} us day {} runtime", duration.as_micros(), i + 1);
     }
 
     let duration = Instant::now().duration_since(start);
