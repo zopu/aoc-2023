@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 pub fn run(input: &str) -> color_eyre::Result<(u32, u32)> {
     let grid: Vec<Vec<char>> = input.lines().map(|l| l.chars().collect()).collect();
     let parts = find_parts(&grid);
@@ -73,26 +75,15 @@ pub fn has_adjacent_special_chars(
     start: usize,
     end: usize,
 ) -> bool {
-    if start > 0 && is_special(grid[line][start - 1]) {
-        return true;
-    }
-    if end < grid[line].len() - 1 && is_special(grid[line][end]) {
+    if start > 0 && is_special(grid[line][start - 1])
+        || end < grid[line].len() - 1 && is_special(grid[line][end])
+    {
         return true;
     }
     let st = if start > 0 { start - 1 } else { start };
-    let ed = if end < grid[0].len() - 1 {
-        end + 1
-    } else {
-        end
-    };
+    let ed = min(end + 1, grid[0].len() - 1);
     let check_line = |l: usize| grid[l][st..ed].iter().any(|c| is_special(*c));
-    if line > 0 && check_line(line - 1) {
-        return true;
-    }
-    if line < grid.len() - 1 && check_line(line + 1) {
-        return true;
-    }
-    false
+    line > 0 && check_line(line - 1) || line < grid.len() - 1 && check_line(line + 1)
 }
 
 fn is_special(c: char) -> bool {
