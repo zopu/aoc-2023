@@ -27,7 +27,7 @@ fn part2(grid: &[Vec<char>], parts: &[Part]) -> color_eyre::Result<u32> {
                     .iter()
                     .filter(|p| is_adjacent(line_num, i, p))
                     .enumerate();
-                if let Some((_i, frst)) = it.next().clone() {
+                if let Some((_i, frst)) = it.next() {
                     if let Some((count, lst)) = it.last() {
                         if count == 1 {
                             sum += frst.num * lst.num;
