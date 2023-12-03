@@ -10,31 +10,24 @@ struct AppArgs {
     profile_times: usize,
 }
 
-fn day1() -> color_eyre::Result<()> {
-    let day1_input = std::fs::read_to_string("inputs/1/input.txt")?;
-    let (p1, p2) = day1::run(&day1_input)?;
-    assert_eq!(55816, p1);
-    assert_eq!(54980, p2);
+fn normal_day(
+    f: fn(&str) -> color_eyre::Result<(u32, u32)>,
+    input_dir: &str,
+    part1: u32,
+    part2: u32,
+) -> color_eyre::Result<()> {
+    let input = std::fs::read_to_string(format!("inputs/{}/input.txt", input_dir))?;
+    let (p1, p2) = f(&input)?;
+    assert_eq!(part1, p1);
+    assert_eq!(part2, p2);
     Ok(())
 }
 
-fn day2() -> color_eyre::Result<()> {
-    let day2_input = std::fs::read_to_string("inputs/2/input.txt")?;
-    let (p1, p2) = day2::run(&day2_input)?;
-    assert_eq!(2685, p1);
-    assert_eq!(83707, p2);
-    Ok(())
-}
-
-fn day3() -> color_eyre::Result<()> {
-    let day3_input = std::fs::read_to_string("inputs/3/input.txt")?;
-    let (p1, p2) = day3::run(&day3_input)?;
-    assert_eq!(527369, p1);
-    assert_eq!(73074886, p2);
-    Ok(())
-}
-
-const DAYS: [fn() -> color_eyre::Result<()>; 3] = [day1, day2, day3];
+const DAYS: [fn() -> color_eyre::Result<()>; 3] = [
+    || normal_day(day1::run, "1", 55816, 54980),
+    || normal_day(day2::run, "2", 2685, 83707),
+    || normal_day(day3::run, "3", 527369, 73074886),
+];
 
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
