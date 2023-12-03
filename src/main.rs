@@ -28,7 +28,8 @@ fn day2() -> color_eyre::Result<()> {
 
 fn day3() -> color_eyre::Result<()> {
     let day3_input = std::fs::read_to_string("inputs/3/input.txt")?;
-    let (_p1, _p2) = day3::run(&day3_input)?;
+    let (p1, _p2) = day3::run(&day3_input)?;
+    assert_eq!(527369, p1);
     Ok(())
 }
 
