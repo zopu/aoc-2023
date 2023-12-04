@@ -10,10 +10,10 @@ struct Part {
     end: usize,
 }
 
-pub fn run(input: &str) -> color_eyre::Result<(u32, u32)> {
+pub fn run(input: &str) -> color_eyre::Result<(u64, u64)> {
     let grid: Vec<Vec<char>> = input.lines().map(|l| l.chars().collect()).collect();
     let parts = find_parts(&grid);
-    Ok((part1(&parts)?, part2(&grid, &parts)?))
+    Ok((part1(&parts)? as u64, part2(&grid, &parts)? as u64))
 }
 
 fn part1(parts: &[Part]) -> color_eyre::Result<u32> {
@@ -124,52 +124,20 @@ fn is_adjacent(line: usize, col: usize, part: &Part) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use crate::runner::{test_input, test_sample};
+
     use super::*;
 
-    fn part1_test(input: &str) -> color_eyre::Result<u32> {
-        let grid: Vec<Vec<char>> = input.lines().map(|l| l.chars().collect()).collect();
-        let parts = find_parts(&grid);
-        part1(&parts)
-    }
-
-    fn part2_test(input: &str) -> color_eyre::Result<u32> {
-        let grid: Vec<Vec<char>> = input.lines().map(|l| l.chars().collect()).collect();
-        let parts = find_parts(&grid);
-        part2(&grid, &parts)
-    }
+    test_sample!(sample_part1, 3, Some(4361), None);
+    test_input!(part1, 3, Some(527369), None);
+    test_input!(part2, 3, None, Some(73074886));
+    test_sample!(sample_part2, 3, None, Some(467835));
 
     #[test]
-    fn test_sample_part1() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/3/sample.txt")?;
-        assert_eq!(4361, part1_test(&input)?);
-        Ok(())
-    }
-
-    #[test]
-    fn test_part1() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/3/input.txt")?;
-        assert_eq!(527369, part1_test(&input)?);
-        Ok(())
-    }
-
-    #[test]
-    fn test_part2() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/3/input.txt")?;
-        assert_eq!(73074886, part2_test(&input)?);
-        Ok(())
-    }
-
-    #[test]
-    fn test_sample_part2() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/3/sample.txt")?;
-        assert_eq!(467835, part2_test(&input)?);
-        Ok(())
-    }
-
-    #[test]
-    fn test_diagonal_input() -> color_eyre::Result<()> {
+    fn diagonal_input() {
         let input = "*...\n.123";
-        assert_eq!(123, part1_test(&input)?);
-        Ok(())
+        let grid: Vec<Vec<char>> = input.lines().map(|l| l.chars().collect()).collect();
+        let parts = find_parts(&grid);
+        super::part1(&parts).unwrap();
     }
 }

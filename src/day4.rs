@@ -11,13 +11,13 @@ use nom::{
 };
 use rayon::{iter::ParallelIterator, str::ParallelString};
 
-pub fn run(input: &str) -> Result<(u32, u32)> {
+pub fn run(input: &str) -> Result<(u64, u64)> {
     let matches = input
         .par_lines()
         .map(scratchcard_matches)
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok((part1(&matches)?, part2(&matches)?))
+    Ok((part1(&matches)? as u64, part2(&matches)? as u64))
 }
 
 fn part1(matches: &[usize]) -> Result<u32> {
@@ -61,6 +61,12 @@ fn scratchcard_matches(card: &str) -> Result<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::runner::{test_input, test_sample};
+
+    test_sample!(sample_part1, 4, Some(13), None);
+    test_sample!(sample_part2, 4, None, Some(30));
+    test_input!(part1, 4, Some(17782), None);
+    test_input!(part2, 4, None, Some(8477787));
 
     #[test]
     fn test_parse_line() {
@@ -69,33 +75,5 @@ mod tests {
         assert_eq!(10, l.len());
         assert_eq!(25, r.len());
         assert_eq!(90, r[1]);
-    }
-
-    #[test]
-    fn test_sample_part1() -> Result<()> {
-        let input = std::fs::read_to_string("inputs/4/sample.txt")?;
-        assert_eq!(13, run(&input)?.0);
-        Ok(())
-    }
-
-    #[test]
-    fn test_part1() -> Result<()> {
-        let input = std::fs::read_to_string("inputs/4/input.txt")?;
-        assert_eq!(17782, run(&input)?.0);
-        Ok(())
-    }
-
-    #[test]
-    fn test_sample_part2() -> Result<()> {
-        let input = std::fs::read_to_string("inputs/4/sample.txt")?;
-        assert_eq!(30, run(&input)?.1);
-        Ok(())
-    }
-
-    #[test]
-    fn test_part2() -> Result<()> {
-        let input = std::fs::read_to_string("inputs/4/input.txt")?;
-        assert_eq!(8477787, run(&input)?.1);
-        Ok(())
     }
 }

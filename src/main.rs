@@ -1,9 +1,13 @@
 use std::time::Instant;
 
+mod runner;
+
 mod day1;
 mod day2;
 mod day3;
 mod day4;
+
+use runner::normal_day;
 
 #[derive(Debug)]
 struct AppArgs {
@@ -11,24 +15,11 @@ struct AppArgs {
     profile_times: usize,
 }
 
-fn normal_day(
-    f: fn(&str) -> color_eyre::Result<(u32, u32)>,
-    input_dir: &str,
-    part1: u32,
-    part2: u32,
-) -> color_eyre::Result<()> {
-    let input = std::fs::read_to_string(format!("inputs/{}/input.txt", input_dir))?;
-    let (p1, p2) = f(&input)?;
-    assert_eq!(part1, p1);
-    assert_eq!(part2, p2);
-    Ok(())
-}
-
 const DAYS: [fn() -> color_eyre::Result<()>; 4] = [
-    || normal_day(day1::run, "1", 55816, 54980),
-    || normal_day(day2::run, "2", 2685, 83707),
-    || normal_day(day3::run, "3", 527369, 73074886),
-    || normal_day(day4::run, "4", 17782, 8477787),
+    || normal_day(day1::run, 1, 55816, 54980),
+    || normal_day(day2::run, 2, 2685, 83707),
+    || normal_day(day3::run, 3, 527369, 73074886),
+    || normal_day(day4::run, 4, 17782, 8477787),
 ];
 
 fn main() -> color_eyre::Result<()> {

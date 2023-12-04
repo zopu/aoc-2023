@@ -4,8 +4,8 @@ const DIGITS: [&str; 10] = [
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
 ];
 
-pub fn run(input: &str) -> color_eyre::Result<(u32, u32)> {
-    Ok((part1(input)?, part2(input)?))
+pub fn run(input: &str) -> color_eyre::Result<(u64, u64)> {
+    Ok((part1(input)? as u64, part2(input)? as u64))
 }
 
 fn part1(input: &str) -> color_eyre::Result<u32> {
@@ -61,28 +61,17 @@ fn leading_digit(s: &str) -> Option<u32> {
 
 #[cfg(test)]
 mod tests {
+    use crate::runner::{test_input, test_sample};
+
     use super::*;
 
-    #[test]
-    fn test_sample_part1() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/1/sample.txt")?;
-        assert_eq!(142, part1(&input)?);
-        Ok(())
-    }
+    test_sample!(sample_part1, 1, Some(142), None);
+    test_input!(real, 1, Some(55816), Some(54980));
 
     #[test]
-    fn test_sample_part2() -> color_eyre::Result<()> {
+    fn sample_part2() -> color_eyre::Result<()> {
         let input = std::fs::read_to_string("inputs/1/sample_part2.txt")?;
         assert_eq!(281, part2(&input)?);
-        Ok(())
-    }
-
-    #[test]
-    fn test_real() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/1/input.txt")?;
-        let (p1, p2) = run(&input)?;
-        assert_eq!(55816, p1);
-        assert_eq!(54980, p2);
         Ok(())
     }
 }

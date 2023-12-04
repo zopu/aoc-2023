@@ -50,8 +50,8 @@ mod parse {
     }
 }
 
-pub fn run(input: &str) -> color_eyre::Result<(u32, u32)> {
-    Ok((part1(input)?, part2(input)?))
+pub fn run(input: &str) -> color_eyre::Result<(u64, u64)> {
+    Ok((part1(input)? as u64, part2(input)? as u64))
 }
 
 fn part1(input: &str) -> color_eyre::Result<u32> {
@@ -86,28 +86,13 @@ fn part2(input: &str) -> color_eyre::Result<u32> {
 
 #[cfg(test)]
 mod tests {
+    use crate::runner::{test_input, test_sample};
+
     use super::*;
 
-    #[test]
-    fn test_sample_part1() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/2/sample.txt")?;
-        assert_eq!(8, part1(&input)?);
-        Ok(())
-    }
-
-    #[test]
-    fn test_part1() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/2/input.txt")?;
-        assert_eq!(2685, part1(&input)?);
-        Ok(())
-    }
-
-    #[test]
-    fn test_sample_part2() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/2/sample.txt")?;
-        assert_eq!(2286, part2(&input)?);
-        Ok(())
-    }
+    test_sample!(sample_part1, 2, Some(8), None);
+    test_input!(part1, 2, Some(2685), None);
+    test_sample!(sample_part2, 2, None, Some(2286));
 
     #[test]
     fn can_parse_color_set() -> color_eyre::Result<()> {
