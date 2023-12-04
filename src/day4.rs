@@ -43,8 +43,7 @@ fn scratchcard_matches(card: &str) -> color_eyre::Result<usize> {
         .next_tuple()
         .unwrap();
     let winners: HashSet<u32> = HashSet::from_iter(l);
-    let nums = HashSet::from_iter(r);
-    Ok(winners.intersection(&nums).count())
+    Ok(r.filter(|n| winners.contains(n)).count())
 }
 
 #[cfg(test)]
