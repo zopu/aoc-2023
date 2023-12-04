@@ -1,10 +1,11 @@
 use std::collections::HashSet;
 
 use itertools::Itertools;
+use rayon::{iter::ParallelIterator, str::ParallelString};
 
 pub fn run(input: &str) -> color_eyre::Result<(u32, u32)> {
     let matches: Vec<_> = input
-        .lines()
+        .par_lines()
         .map(|line| scratchcard_matches(line).unwrap())
         .collect();
     Ok((part1(&matches)?, part2(&matches)?))
