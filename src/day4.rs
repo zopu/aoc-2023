@@ -11,11 +11,10 @@ pub fn run(input: &str) -> color_eyre::Result<(u32, u32)> {
 }
 
 fn part1(matches: &[usize]) -> color_eyre::Result<u32> {
-    let sum: usize = matches
+    Ok(matches
         .iter()
         .map(|m| if *m > 0 { 1 << (m - 1) } else { 0 })
-        .sum();
-    Ok(sum as u32)
+        .sum())
 }
 
 fn part2(matches: &[usize]) -> color_eyre::Result<u32> {
