@@ -22,6 +22,7 @@ name = "aoc-2023"
 version = "0.1.0"
 dependencies = [
  "color-eyre",
+ "itertools",
  "nom",
  "pico-args",
  "rayon",
@@ -150,6 +151,15 @@ name = "indenter"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
+
+[[package]]
+name = "itertools"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25db6b064527c5d482d0423354fcd07a89a2dfe07b67892e62411946db7f07b0"
+dependencies = [
+ "either",
+]
 
 [[package]]
 name = "lazy_static"
