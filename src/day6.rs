@@ -1,7 +1,7 @@
 use color_eyre::eyre::anyhow;
 use color_eyre::Result;
-use nom::character::complete::{multispace1, newline, u32};
-use nom::sequence::separated_pair;
+use itertools::Itertools;
+use nom::character::complete::{alpha1, multispace1, newline, u32};
 use nom::{
     bytes::complete::tag,
     multi::separated_list1,
@@ -30,26 +30,23 @@ fn part2(input: &str) -> Result<u64> {
 }
 
 fn parse_part1(input: &str) -> IResult<&str, (Vec<u32>, Vec<u32>)> {
-    separated_pair(
-        preceded(
-            tuple((tag("Time:"), multispace1)),
-            separated_list1(multispace1, u32),
-        ),
+    let (r, v) = separated_list1(
         newline,
         preceded(
-            tuple((tag("Distance:"), multispace1)),
+            tuple((alpha1, tag(":"), multispace1)),
             separated_list1(multispace1, u32),
         ),
-    )(input)
+    )(input)?;
+    Ok((r, v.into_iter().next_tuple().unwrap()))
 }
 
 fn parse_part2(input: &str) -> (u64, u64) {
-    let nums = input
+    input
         .lines()
         .map(|l| l.chars().filter(|c| c.is_ascii_digit()).collect())
         .map(|l: String| l.parse::<u64>().unwrap())
-        .collect::<Vec<u64>>();
-    (nums[0], nums[1])
+        .next_tuple()
+        .unwrap()
 }
 
 fn solve(t: u64, d: u64) -> u64 {
