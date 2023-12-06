@@ -7,6 +7,7 @@ mod day2;
 mod day3;
 mod day4;
 mod day5;
+mod day6;
 
 use runner::normal_day;
 
@@ -16,12 +17,13 @@ struct AppArgs {
     profile_times: usize,
 }
 
-const DAYS: [fn() -> color_eyre::Result<()>; 5] = [
+const DAYS: [fn() -> color_eyre::Result<()>; 6] = [
     || normal_day(day1::run, 1, 55816, 54980),
     || normal_day(day2::run, 2, 2685, 83707),
     || normal_day(day3::run, 3, 527369, 73074886),
     || normal_day(day4::run, 4, 17782, 8477787),
     || normal_day(day5::run, 5, 251346198, 72263011),
+    || normal_day(day6::run, 6, 512295, 0),
 ];
 
 fn main() -> color_eyre::Result<()> {
