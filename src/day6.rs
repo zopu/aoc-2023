@@ -10,21 +10,26 @@ use nom::{
 };
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
-    Ok((part1(input)? as u64, 0))
+    Ok((part1(input)? as u64, part2(input)?))
 }
 
-fn part1(input: &str) -> Result<u32> {
+fn part1(input: &str) -> Result<u64> {
     let (_remaining, (times, distances)) =
-        parse(input).map_err(|e| anyhow!("Parse error: {}", e))?;
+        parse_part1(input).map_err(|e| anyhow!("Parse error: {}", e))?;
     let mut product = 1;
     for (t, d) in times.iter().zip(distances.iter()) {
-        let n = solve(*t, *d);
+        let n = solve(*t as u64, *d as u64);
         product *= n;
     }
     Ok(product)
 }
 
-fn parse(input: &str) -> IResult<&str, (Vec<u32>, Vec<u32>)> {
+fn part2(input: &str) -> Result<u64> {
+    let (t, d) = parse_part2(input);
+    Ok(solve(t, d))
+}
+
+fn parse_part1(input: &str) -> IResult<&str, (Vec<u32>, Vec<u32>)> {
     separated_pair(
         preceded(
             tuple((tag("Time:"), multispace1)),
@@ -38,7 +43,16 @@ fn parse(input: &str) -> IResult<&str, (Vec<u32>, Vec<u32>)> {
     )(input)
 }
 
-fn solve(t: u32, d: u32) -> u32 {
+fn parse_part2(input: &str) -> (u64, u64) {
+    let nums = input
+        .lines()
+        .map(|l| l.chars().filter(|c| c.is_ascii_digit()).collect())
+        .map(|l: String| l.parse::<u64>().unwrap())
+        .collect::<Vec<u64>>();
+    (nums[0], nums[1])
+}
+
+fn solve(t: u64, d: u64) -> u64 {
     // Quuadratic formula!
     let t = t as f64;
     let d = d as f64;
@@ -57,7 +71,7 @@ fn solve(t: u32, d: u32) -> u32 {
         bottom_ceil += 1.0;
     }
 
-    top_floor as u32 - bottom_ceil as u32 + 1
+    top_floor as u64 - bottom_ceil as u64 + 1
 }
 
 #[cfg(test)]
@@ -69,7 +83,9 @@ mod tests {
     };
 
     test_sample!(sample_part1, 6, Some(288), None);
+    test_sample!(sample_part2, 6, None, Some(71503));
     test_input!(part1, 6, Some(512295), None);
+    test_input!(part2, 6, None, Some(36530883));
 
     #[test]
     fn can_solve_problem() {
