@@ -2,22 +2,39 @@ use std::cmp::Ordering;
 
 use color_eyre::Result;
 use itertools::Itertools;
+use rayon::{iter::ParallelIterator, str::ParallelString};
 
 #[derive(Debug, PartialEq, Eq)]
 struct Hand {
     cards: [u8; 5],
     typ: HandType,
-    jokers_wild: bool,
+    typ_with_wild_jokers: HandType,
 }
 
-impl Ord for Hand {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.typ.cmp(&other.typ) {
-            Ordering::Equal => {}
-            ord => return ord,
+impl Hand {
+    fn compare(&self, other: &Self, jokers_wild: bool) -> Ordering {
+        if jokers_wild {
+            match self.typ_with_wild_jokers.cmp(&other.typ_with_wild_jokers) {
+                Ordering::Equal => {}
+                ord => return ord,
+            }
+        } else {
+            match self.typ.cmp(&other.typ) {
+                Ordering::Equal => {}
+                ord => return ord,
+            }
         }
+
         // Compare cards
-        for (a, b) in self.cards.iter().zip(other.cards.iter()) {
+        for (mut a, mut b) in self.cards.into_iter().zip(other.cards.into_iter()) {
+            if jokers_wild {
+                if a == 11 {
+                    a = 0;
+                }
+                if b == 11 {
+                    b = 0;
+                }
+            }
             if a > b {
                 return Ordering::Greater;
             }
@@ -26,12 +43,6 @@ impl Ord for Hand {
             }
         }
         Ordering::Equal
-    }
-}
-
-impl PartialOrd for Hand {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 
@@ -50,9 +61,19 @@ enum HandType {
 
 impl From<([u8; 5], bool)> for HandType {
     fn from(input: ([u8; 5], bool)) -> Self {
-        let (cards, _jokers_wild) = input;
-        let num_jokers = cards.iter().filter(|n| **n == 0).count();
-        let hashmap = cards.iter().filter(|n| **n != 0).counts();
+        let (cards, jokers_wild) = input;
+        let num_jokers = if jokers_wild {
+            cards.iter().filter(|n| **n == 11).count()
+        } else {
+            0
+        };
+
+        let hashmap = if jokers_wild {
+            cards.iter().filter(|n| **n != 11).counts()
+        } else {
+            cards.iter().counts()
+        };
+
         let mut counts: Vec<_> = hashmap.values().collect();
         if counts.len() < 2 {
             return HandType::FiveOfAKind;
@@ -71,15 +92,15 @@ impl From<([u8; 5], bool)> for HandType {
 }
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
-    Ok((part1(input)?, part2(input)?))
+    let mut v: Vec<(Hand, Bid)> = input
+        .par_lines()
+        .map(parse_hand)
+        .collect::<Result<Vec<_>>>()?;
+    Ok((solve(&mut v, false)?, solve(&mut v, true)?))
 }
 
-fn part1(input: &str) -> Result<u64> {
-    let mut v: Vec<(Hand, Bid)> = input
-        .lines()
-        .map(|l| parse_hand(l, false))
-        .collect::<Result<Vec<_>>>()?;
-    v.sort();
+fn solve(v: &mut [(Hand, Bid)], jokers_wild: bool) -> Result<u64> {
+    v.sort_by(|(a, _), (b, _)| a.compare(b, jokers_wild));
     let sum: u64 = v
         .iter()
         .enumerate()
@@ -88,33 +109,13 @@ fn part1(input: &str) -> Result<u64> {
     Ok(sum)
 }
 
-fn part2(input: &str) -> Result<u64> {
-    let mut v: Vec<(Hand, Bid)> = input
-        .lines()
-        .map(|l| parse_hand(l, true))
-        .collect::<Result<Vec<_>>>()?;
-    v.sort();
-    let sum: u64 = v
-        .iter()
-        .enumerate()
-        .map(|(i, (_hand, bid))| *bid as u64 * (i as u64 + 1))
-        .sum();
-    Ok(sum)
-}
-
-fn parse_hand(line: &str, jokers_wild: bool) -> Result<(Hand, Bid)> {
+fn parse_hand(line: &str) -> Result<(Hand, Bid)> {
     let mut cards = [0; 5];
     for (i, c) in line.chars().take(5).enumerate() {
         let n = match (c, c.is_ascii_digit()) {
             (_, true) => c as u8 - b'0',
             ('T', _) => 10,
-            ('J', _) => {
-                if jokers_wild {
-                    0
-                } else {
-                    11
-                }
-            }
+            ('J', _) => 11,
             ('Q', _) => 12,
             ('K', _) => 13,
             ('A', _) => 14,
@@ -125,8 +126,8 @@ fn parse_hand(line: &str, jokers_wild: bool) -> Result<(Hand, Bid)> {
     let bid = line.chars().skip(6).collect::<String>().parse()?;
     let hand = Hand {
         cards,
-        typ: HandType::from((cards, jokers_wild)),
-        jokers_wild,
+        typ: HandType::from((cards, false)),
+        typ_with_wild_jokers: HandType::from((cards, true)),
     };
     Ok((hand, bid))
 }
