@@ -60,21 +60,20 @@ impl From<([u8; 5], bool)> for HandType {
         }
         let num_jokers = if jokers_wild { card_counts[11] } else { 0 };
         if jokers_wild {
-            card_counts[11] = 0
+            card_counts[11] = 0;
         };
-        let mut counts: Vec<_> = card_counts.iter().filter(|&&c| c > 0).collect();
+        let num_unique_cards = card_counts.iter().filter(|&&c| c > 0).count();
+        let max = card_counts.iter().max().unwrap();
 
-        if counts.len() < 2 {
+        if num_unique_cards < 2 {
             return HandType::FiveOfAKind;
         }
-        counts.sort();
-        let (max, next) = (counts[counts.len() - 1], counts[counts.len() - 2]);
-        match (max + num_jokers, next) {
+        match (max + num_jokers, num_unique_cards) {
             (4, _) => HandType::FourOfAKind,
             (3, 2) => HandType::FullHouse,
             (3, _) => HandType::ThreeOfAKind,
-            (2, 2) => HandType::TwoPair,
-            (2, 1) => HandType::OnePair,
+            (2, 3) => HandType::TwoPair,
+            (2, _) => HandType::OnePair,
             _ => HandType::HighCard,
         }
     }
