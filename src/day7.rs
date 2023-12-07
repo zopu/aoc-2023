@@ -26,20 +26,14 @@ impl Hand {
         }
 
         // Compare cards
-        for (mut a, mut b) in self.cards.into_iter().zip(other.cards.into_iter()) {
-            if jokers_wild {
-                if a == 11 {
-                    a = 0;
-                }
-                if b == 11 {
-                    b = 0;
-                }
-            }
-            if a > b {
-                return Ordering::Greater;
-            }
-            if b > a {
-                return Ordering::Less;
+        for (a, b) in self.cards.into_iter().zip(other.cards.into_iter()) {
+            match (a, b, jokers_wild) {
+                (11, 11, _) => {}
+                (11, _, true) => return Ordering::Less,
+                (_, 11, true) => return Ordering::Greater,
+                (a, b, _) if a > b => return Ordering::Greater,
+                (a, b, _) if a < b => return Ordering::Less,
+                _ => {}
             }
         }
         Ordering::Equal
@@ -60,18 +54,14 @@ enum HandType {
 }
 
 impl From<([u8; 5], bool)> for HandType {
-    fn from(input: ([u8; 5], bool)) -> Self {
-        let (cards, jokers_wild) = input;
-        let num_jokers = if jokers_wild {
-            cards.iter().filter(|n| **n == 11).count()
+    fn from((cards, jokers_wild): ([u8; 5], bool)) -> Self {
+        let (num_jokers, hashmap) = if jokers_wild {
+            (
+                cards.iter().filter(|n| **n == 11).count(),
+                cards.iter().filter(|n| **n != 11).counts(),
+            )
         } else {
-            0
-        };
-
-        let hashmap = if jokers_wild {
-            cards.iter().filter(|n| **n != 11).counts()
-        } else {
-            cards.iter().counts()
+            (0, cards.iter().counts())
         };
 
         let mut counts: Vec<_> = hashmap.values().collect();
