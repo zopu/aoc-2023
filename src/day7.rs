@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
 use color_eyre::Result;
-use itertools::Itertools;
 use rayon::{iter::ParallelIterator, str::ParallelString};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -55,16 +54,16 @@ enum HandType {
 
 impl From<([u8; 5], bool)> for HandType {
     fn from((cards, jokers_wild): ([u8; 5], bool)) -> Self {
-        let (num_jokers, hashmap) = if jokers_wild {
-            (
-                cards.iter().filter(|n| **n == 11).count(),
-                cards.iter().filter(|n| **n != 11).counts(),
-            )
-        } else {
-            (0, cards.iter().counts())
+        let mut card_counts = [0u8; 15];
+        for c in cards {
+            card_counts[c as usize] += 1;
+        }
+        let num_jokers = if jokers_wild { card_counts[11] } else { 0 };
+        if jokers_wild {
+            card_counts[11] = 0
         };
+        let mut counts: Vec<_> = card_counts.iter().filter(|&&c| c > 0).collect();
 
-        let mut counts: Vec<_> = hashmap.values().collect();
         if counts.len() < 2 {
             return HandType::FiveOfAKind;
         }
