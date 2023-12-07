@@ -25,7 +25,7 @@ const DAYS: [fn() -> color_eyre::Result<()>; 7] = [
     || normal_day(day4::run, 4, 17782, 8477787),
     || normal_day(day5::run, 5, 251346198, 72263011),
     || normal_day(day6::run, 6, 512295, 36530883),
-    || normal_day(day7::run, 7, 250347426, 0),
+    || normal_day(day7::run, 7, 250347426, 251224870),
 ];
 
 fn main() -> color_eyre::Result<()> {
