@@ -24,8 +24,11 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
 
     let p1_start = parsed.names_map["AAA"];
     let p1_end = parsed.names_map["ZZZ"];
-    let p1 = part1(&parsed.directions, p1_start, p1_end, &parsed.nodes_map)?;
-    Ok((p1, part2(&parsed)?))
+    let (p1, p2) = rayon::join(
+        || part1(&parsed.directions, p1_start, p1_end, &parsed.nodes_map),
+        || part2(&parsed),
+    );
+    Ok((p1?, p2?))
 }
 
 fn part1(
@@ -47,16 +50,14 @@ fn part2(parsed: &ParseOutput) -> Result<u64> {
     let ghost_moves: Vec<StepCount> = locations
         .par_iter()
         .map(|ghost_location| {
-            let loop_size = find_first_ending(
+            find_first_ending(
                 &parsed.directions,
                 *ghost_location,
                 &parsed.nodes_map,
                 &parsed.ghost_ends,
-            )?;
-            Ok(loop_size)
+            )
         })
         .collect::<Result<Vec<StepCount>>>()?;
-
     let answer: u64 = ghost_moves.iter().cloned().fold(1u64, |p, a| p.lcm(&a));
     Ok(answer)
 }
