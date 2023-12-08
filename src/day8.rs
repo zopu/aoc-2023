@@ -23,9 +23,8 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     let parsed = parse(input)?;
 
     let p1_start = parsed.names_map["AAA"];
-    let p1_end = parsed.names_map["ZZZ"];
     let (p1, p2) = rayon::join(
-        || part1(&parsed.directions, p1_start, p1_end, &parsed.nodes_map),
+        || part1(&parsed.directions, p1_start, &parsed.nodes_map),
         || part2(&parsed),
     );
     Ok((p1?, p2?))
@@ -34,12 +33,9 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
 fn part1(
     directions: &[Direction],
     start: u16,
-    end: u16,
-    nodes_map: &BTreeMap<u16, (u16, u16)>,
+    nodes_map: &BTreeMap<u16, NodeMapEntry>,
 ) -> Result<u64> {
-    let mut ends = BTreeSet::new();
-    ends.insert(end);
-    find_first_ending(directions, start, nodes_map, &ends)
+    find_first_ending(directions, start, nodes_map)
 }
 
 fn part2(parsed: &ParseOutput) -> Result<u64> {
@@ -50,12 +46,7 @@ fn part2(parsed: &ParseOutput) -> Result<u64> {
         .ghost_starts
         .par_iter()
         .map(|ghost_location| {
-            find_first_ending(
-                &parsed.directions,
-                *ghost_location,
-                &parsed.nodes_map,
-                &parsed.ghost_ends,
-            )
+            find_first_ending(&parsed.directions, *ghost_location, &parsed.nodes_map)
         })
         .collect::<Result<Vec<StepCount>>>()?;
     let answer: u64 = ghost_moves.iter().cloned().fold(1u64, |p, a| p.lcm(&a));
@@ -65,31 +56,34 @@ fn part2(parsed: &ParseOutput) -> Result<u64> {
 fn find_first_ending(
     directions: &[Direction],
     start: u16,
-    nodes_map: &BTreeMap<Node, (Node, Node)>,
-    ends: &BTreeSet<Node>,
+    nodes_map: &BTreeMap<Node, NodeMapEntry>,
 ) -> Result<StepCount> {
     let mut location = start;
 
     for (i, d) in directions.iter().cycle().enumerate() {
-        if ends.contains(&location) {
+        let entry = &nodes_map[&location];
+        if entry.is_end {
             return Ok(i as u64);
         }
-
-        let routes = nodes_map[&location];
         location = match d {
-            Direction::L => routes.0,
-            Direction::R => routes.1,
+            Direction::L => entry.l,
+            Direction::R => entry.r,
         };
     }
     Err(anyhow!("Couldn't find a loop!"))
 }
 
+struct NodeMapEntry {
+    l: Node,
+    r: Node,
+    is_end: bool,
+}
+
 struct ParseOutput<'a> {
     directions: Vec<Direction>,
     names_map: HashMap<&'a str, u16>,
-    nodes_map: BTreeMap<u16, (u16, u16)>,
+    nodes_map: BTreeMap<u16, NodeMapEntry>,
     ghost_starts: Vec<u16>,
-    ghost_ends: BTreeSet<u16>,
 }
 
 fn parse(input: &str) -> Result<ParseOutput> {
@@ -119,23 +113,25 @@ fn parse(input: &str) -> Result<ParseOutput> {
             }
         }
         let (source, l, r) = (names_map[a], names_map[b], names_map[c]);
-        nodes_map.insert(source, (l, r));
+
+        let mut is_end = false;
         match a.chars().nth(2) {
             Some('A') => {
                 ghost_starts.push(source);
             }
             Some('Z') => {
                 ghost_ends.insert(source);
+                is_end = true;
             }
             _ => {}
         }
+        nodes_map.insert(source, NodeMapEntry { is_end, l, r });
     }
     Ok(ParseOutput {
         directions,
         names_map,
         nodes_map,
         ghost_starts,
-        ghost_ends,
     })
 }
 
