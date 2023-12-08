@@ -8,7 +8,6 @@ use nom::{
 };
 use num::Integer;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use std::collections::hash_map::Entry::Vacant;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -35,66 +34,44 @@ fn part1(
     end: u16,
     nodes_map: &HashMap<u16, (u16, u16)>,
 ) -> Result<u64> {
-    let mut count = 0;
-    let mut location = start;
-    for d in directions.iter().cycle() {
-        if location == end {
-            break;
-        }
-        let routes = nodes_map[&location];
-        location = match d {
-            Direction::L => routes.0,
-            Direction::R => routes.1,
-        };
-        count += 1;
-    }
-    Ok(count)
+    let mut ends = HashSet::new();
+    ends.insert(end);
+    find_first_ending(directions, start, nodes_map, &ends)
 }
 
 fn part2(parsed: &ParseOutput) -> Result<u64> {
+    // This *happens* to work on both the sample data and input data,
+    // where the initial offset and loop lengths are all the same size,
+    // but can't be assumed to generally work.
     let locations: Vec<Node> = parsed.ghost_starts.iter().cloned().collect();
-    let ghost_moves: Vec<(StepCount, StepCount)> = locations
+    let ghost_moves: Vec<StepCount> = locations
         .par_iter()
         .map(|ghost_location| {
-            let (loop_size, offset) = find_loop_size_and_offset(
+            let loop_size = find_first_ending(
                 &parsed.directions,
                 *ghost_location,
                 &parsed.nodes_map,
                 &parsed.ghost_ends,
             )?;
-            Ok((offset, loop_size))
+            Ok(loop_size)
         })
-        .collect::<Result<Vec<(StepCount, StepCount)>>>()?;
+        .collect::<Result<Vec<StepCount>>>()?;
 
-    // This *happens* to work on both the sample data and input data, but doesn't generally work.
-    // Should consider expanding to using something like CRT rather than LCM.
-    let answer: u64 = ghost_moves
-        .iter()
-        .cloned()
-        .fold(1u64, |p, (a, _)| p.lcm(&a));
+    let answer: u64 = ghost_moves.iter().cloned().fold(1u64, |p, a| p.lcm(&a));
     Ok(answer)
 }
 
-fn find_loop_size_and_offset(
+fn find_first_ending(
     directions: &[Direction],
     start: u16,
     nodes_map: &HashMap<Node, (Node, Node)>,
     ends: &HashSet<Node>,
-) -> Result<(StepCount, StepCount)> {
-    let mut count: u64 = 0;
+) -> Result<StepCount> {
     let mut location = start;
-    let mut visited_ends: HashMap<(Node, usize), StepCount> = HashMap::new(); // usize is direction step
 
-    #[allow(clippy::explicit_counter_loop)]
-    for (direction_step, d) in directions.iter().enumerate().cycle() {
+    for (i, d) in directions.iter().cycle().enumerate() {
         if ends.contains(&location) {
-            if let Vacant(e) = visited_ends.entry((location, direction_step)) {
-                e.insert(count);
-            } else {
-                let loop_size = count - visited_ends[&(location, direction_step)];
-                let offset = count - loop_size;
-                return Ok((loop_size, offset));
-            }
+            return Ok(i as u64);
         }
 
         let routes = nodes_map[&location];
@@ -102,7 +79,6 @@ fn find_loop_size_and_offset(
             Direction::L => routes.0,
             Direction::R => routes.1,
         };
-        count += 1;
     }
     Err(anyhow!("Couldn't find a loop!"))
 }
