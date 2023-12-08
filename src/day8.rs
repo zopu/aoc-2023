@@ -8,7 +8,7 @@ use nom::{
 };
 use num::Integer;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[derive(Debug, PartialEq, Eq)]
 enum Direction {
@@ -35,9 +35,9 @@ fn part1(
     directions: &[Direction],
     start: u16,
     end: u16,
-    nodes_map: &HashMap<u16, (u16, u16)>,
+    nodes_map: &BTreeMap<u16, (u16, u16)>,
 ) -> Result<u64> {
-    let mut ends = HashSet::new();
+    let mut ends = BTreeSet::new();
     ends.insert(end);
     find_first_ending(directions, start, nodes_map, &ends)
 }
@@ -46,8 +46,8 @@ fn part2(parsed: &ParseOutput) -> Result<u64> {
     // This *happens* to work on both the sample data and input data,
     // where the initial offset and loop lengths are all the same size,
     // but can't be assumed to generally work.
-    let locations: Vec<Node> = parsed.ghost_starts.iter().cloned().collect();
-    let ghost_moves: Vec<StepCount> = locations
+    let ghost_moves: Vec<StepCount> = parsed
+        .ghost_starts
         .par_iter()
         .map(|ghost_location| {
             find_first_ending(
@@ -65,8 +65,8 @@ fn part2(parsed: &ParseOutput) -> Result<u64> {
 fn find_first_ending(
     directions: &[Direction],
     start: u16,
-    nodes_map: &HashMap<Node, (Node, Node)>,
-    ends: &HashSet<Node>,
+    nodes_map: &BTreeMap<Node, (Node, Node)>,
+    ends: &BTreeSet<Node>,
 ) -> Result<StepCount> {
     let mut location = start;
 
@@ -87,9 +87,9 @@ fn find_first_ending(
 struct ParseOutput<'a> {
     directions: Vec<Direction>,
     names_map: HashMap<&'a str, u16>,
-    nodes_map: HashMap<u16, (u16, u16)>,
-    ghost_starts: HashSet<u16>,
-    ghost_ends: HashSet<u16>,
+    nodes_map: BTreeMap<u16, (u16, u16)>,
+    ghost_starts: Vec<u16>,
+    ghost_ends: BTreeSet<u16>,
 }
 
 fn parse(input: &str) -> Result<ParseOutput> {
@@ -106,10 +106,10 @@ fn parse(input: &str) -> Result<ParseOutput> {
     it.next();
 
     let mut names_count = 0;
-    let mut nodes_map = HashMap::new();
+    let mut nodes_map = BTreeMap::new();
     let mut names_map = HashMap::new();
-    let mut ghost_starts = HashSet::new();
-    let mut ghost_ends = HashSet::new();
+    let mut ghost_starts = Vec::new();
+    let mut ghost_ends = BTreeSet::new();
     for line in it {
         let (_, (a, b, c)) = parse_node(line).map_err(|e| anyhow!("Node parse error {:?}", e))?;
         for name in [a, b, c] {
@@ -122,7 +122,7 @@ fn parse(input: &str) -> Result<ParseOutput> {
         nodes_map.insert(source, (l, r));
         match a.chars().nth(2) {
             Some('A') => {
-                ghost_starts.insert(source);
+                ghost_starts.push(source);
             }
             Some('Z') => {
                 ghost_ends.insert(source);
