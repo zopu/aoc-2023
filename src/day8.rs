@@ -37,9 +37,7 @@ fn part1(
 ) -> Result<u64> {
     let mut count = 0;
     let mut location = start;
-    // println!("Names map: {:?}", names_map);
     for d in directions.iter().cycle() {
-        // println!("Visiting location {}", location);
         if location == end {
             break;
         }
@@ -58,7 +56,7 @@ fn part2(parsed: &ParseOutput) -> Result<u64> {
     let ghost_moves: Vec<(StepCount, StepCount)> = locations
         .par_iter()
         .map(|ghost_location| {
-            let (offset, loop_size, _offsets) = find_loop_and_offsets_for_ends(
+            let (loop_size, offset) = find_loop_size_and_offset(
                 &parsed.directions,
                 *ghost_location,
                 &parsed.nodes_map,
@@ -69,7 +67,7 @@ fn part2(parsed: &ParseOutput) -> Result<u64> {
         .collect::<Result<Vec<(StepCount, StepCount)>>>()?;
 
     // This *happens* to work on both the sample data and input data, but doesn't generally work.
-    // Should expand to using something like CRT rather than LCM.
+    // Should consider expanding to using something like CRT rather than LCM.
     let answer: u64 = ghost_moves
         .iter()
         .cloned()
@@ -77,13 +75,12 @@ fn part2(parsed: &ParseOutput) -> Result<u64> {
     Ok(answer)
 }
 
-#[allow(clippy::type_complexity)]
-fn find_loop_and_offsets_for_ends(
+fn find_loop_size_and_offset(
     directions: &[Direction],
     start: u16,
     nodes_map: &HashMap<Node, (Node, Node)>,
     ends: &HashSet<Node>,
-) -> Result<(StepCount, StepCount, Vec<(Node, StepCount)>)> {
+) -> Result<(StepCount, StepCount)> {
     let mut count: u64 = 0;
     let mut location = start;
     let mut visited_ends: HashMap<(Node, usize), StepCount> = HashMap::new(); // usize is direction step
@@ -96,12 +93,7 @@ fn find_loop_and_offsets_for_ends(
             } else {
                 let loop_size = count - visited_ends[&(location, direction_step)];
                 let offset = count - loop_size;
-                let offsets = visited_ends
-                    .iter()
-                    .map(|((node, _), step_count)| (*node, *step_count))
-                    .filter(|(_, step_count)| *step_count > offset)
-                    .collect();
-                return Ok((offset, loop_size, offsets));
+                return Ok((loop_size, offset));
             }
         }
 
