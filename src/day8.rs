@@ -7,6 +7,7 @@ use nom::{
     IResult,
 };
 use num::Integer;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::collections::hash_map::Entry::Vacant;
 use std::collections::{HashMap, HashSet};
 
@@ -55,7 +56,7 @@ fn part1(
 fn part2(parsed: &ParseOutput) -> Result<u64> {
     let locations: Vec<Node> = parsed.ghost_starts.iter().cloned().collect();
     let ghost_moves: Vec<(StepCount, StepCount)> = locations
-        .iter()
+        .par_iter()
         .map(|ghost_location| {
             let (offset, loop_size, _offsets) = find_loop_and_offsets_for_ends(
                 &parsed.directions,
