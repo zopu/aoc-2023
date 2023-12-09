@@ -58,7 +58,7 @@ fn run_all_days() -> color_eyre::Result<()> {
         let day_start = Instant::now();
         d()?;
         let duration = Instant::now().duration_since(day_start);
-        println!("{:?} us day {} runtime", duration.as_micros(), i + 1);
+        println!("{:?}us day {} runtime", duration.as_micros(), i + 1);
     }
 
     let duration = Instant::now().duration_since(start);
