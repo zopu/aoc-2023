@@ -1,10 +1,9 @@
 use color_eyre::{eyre::anyhow, Result};
 use nom::{bytes::complete::tag, character::complete::i32, multi::separated_list1, IResult};
-use rayon::{iter::ParallelIterator, str::ParallelString};
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let (p1, p2) = input
-        .par_lines()
+        .lines()
         .map(|l| {
             let (_, mut v) = parse_line(l)
                 .map_err(|e| anyhow!("Parse error: {}", e))
@@ -14,10 +13,8 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
             let p2 = find_next(&v);
             (p1, p2)
         })
-        .reduce(
-            || (0, 0),
-            |(p1sum, p2sum), (p1, p2)| (p1sum + p1, p2sum + p2),
-        );
+        .reduce(|(p1sum, p2sum), (p1, p2)| (p1sum + p1, p2sum + p2))
+        .unwrap();
     Ok((p1 as u64, p2 as u64))
 }
 
@@ -26,17 +23,23 @@ fn parse_line(input: &str) -> IResult<&str, Vec<i32>> {
 }
 
 fn find_next(seq: &[i32]) -> i32 {
-    let next_diffs = |v: Vec<i32>, n| -> Vec<i32> {
-        let mut next_v = vec![n];
-        for i in 1..v.len() + 1 {
-            next_v.push(next_v[i - 1] - v[i - 1]);
+    let next_diffs = |mut v: Vec<i32>, n| -> Vec<i32> {
+        if v.is_empty() {
+            v.push(n);
+            return v;
+        };
+        let mut last_v_i = v[0];
+        v[0] = n;
+        for i in 1..v.len() {
+            (last_v_i, v[i]) = (v[i], v[i - 1] - last_v_i);
         }
-        if next_v[v.len()] == 0 {
-            next_v.pop();
+        let diff = v[v.len() - 1] - last_v_i;
+        if diff != 0 {
+            v.push(diff);
         }
-        next_v
+        v
     };
-    let diffs = seq.iter().cloned().fold(Vec::new(), next_diffs);
+    let diffs = seq.iter().cloned().fold(Vec::with_capacity(20), next_diffs);
     diffs.iter().sum()
 }
 
