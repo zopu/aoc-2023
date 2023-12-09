@@ -9,9 +9,7 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
             let (_, v) = parse_line(l)
                 .map_err(|e| anyhow!("Parse error: {}", e))
                 .unwrap();
-            let p1 = find_next(v.iter());
-            let p2 = find_next(v.iter().rev());
-            (p1, p2)
+            (find_next(v.iter()), find_next(v.iter().rev()))
         })
         .reduce(
             || (0, 0),
@@ -25,24 +23,27 @@ fn parse_line(input: &str) -> IResult<&str, Vec<i32>> {
 }
 
 fn find_next<'a>(seq: impl Iterator<Item = &'a i32>) -> i32 {
-    let next_diffs = |mut v: Vec<i32>, n: &i32| -> Vec<i32> {
-        if v.is_empty() {
-            v.push(*n);
-            return v;
-        };
-        let mut last_v_i = v[0];
-        v[0] = *n;
-        for i in 1..v.len() {
-            (last_v_i, v[i]) = (v[i], v[i - 1] - last_v_i);
-        }
-        let diff = v[v.len() - 1] - last_v_i;
-        if diff != 0 {
-            v.push(diff);
-        }
-        v
-    };
-    let diffs = seq.fold(Vec::with_capacity(20), next_diffs);
-    diffs.iter().sum()
+    seq.fold(
+        Vec::with_capacity(20),
+        |mut v: Vec<i32>, n: &i32| -> Vec<i32> {
+            if v.is_empty() {
+                v.push(*n);
+                return v;
+            };
+            let mut last_v_i = v[0];
+            v[0] = *n;
+            for i in 1..v.len() {
+                (last_v_i, v[i]) = (v[i], v[i - 1] - last_v_i);
+            }
+            let diff = v[v.len() - 1] - last_v_i;
+            if diff != 0 {
+                v.push(diff);
+            }
+            v
+        },
+    )
+    .iter()
+    .sum()
 }
 
 #[cfg(test)]
