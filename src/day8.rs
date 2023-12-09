@@ -8,7 +8,7 @@ use nom::{
 };
 use num::Integer;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap};
 
 #[derive(Debug, PartialEq, Eq)]
 enum Direction {
@@ -24,18 +24,14 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
 
     let p1_start = parsed.names_map["AAA"];
     let (p1, p2) = rayon::join(
-        || part1(&parsed.directions, p1_start, &parsed.nodes_map),
+        || part1(&parsed.directions, p1_start, &parsed.nodes),
         || part2(&parsed),
     );
     Ok((p1?, p2?))
 }
 
-fn part1(
-    directions: &[Direction],
-    start: u16,
-    nodes_map: &BTreeMap<u16, NodeMapEntry>,
-) -> Result<u64> {
-    find_first_ending(directions, start, nodes_map)
+fn part1(directions: &[Direction], start: u16, nodes: &[NodeMapEntry]) -> Result<u64> {
+    find_first_ending(directions, start, nodes)
 }
 
 fn part2(parsed: &ParseOutput) -> Result<u64> {
@@ -45,9 +41,7 @@ fn part2(parsed: &ParseOutput) -> Result<u64> {
     let ghost_moves: Vec<StepCount> = parsed
         .ghost_starts
         .par_iter()
-        .map(|ghost_location| {
-            find_first_ending(&parsed.directions, *ghost_location, &parsed.nodes_map)
-        })
+        .map(|ghost_location| find_first_ending(&parsed.directions, *ghost_location, &parsed.nodes))
         .collect::<Result<Vec<StepCount>>>()?;
     let answer: u64 = ghost_moves.iter().cloned().fold(1u64, |p, a| p.lcm(&a));
     Ok(answer)
@@ -56,12 +50,12 @@ fn part2(parsed: &ParseOutput) -> Result<u64> {
 fn find_first_ending(
     directions: &[Direction],
     start: u16,
-    nodes_map: &BTreeMap<Node, NodeMapEntry>,
+    nodes: &[NodeMapEntry],
 ) -> Result<StepCount> {
     let mut location = start;
 
     for (i, d) in directions.iter().cycle().enumerate() {
-        let entry = &nodes_map[&location];
+        let entry = &nodes[location as usize];
         if entry.is_end {
             return Ok(i as u64);
         }
@@ -73,6 +67,7 @@ fn find_first_ending(
     Err(anyhow!("Couldn't find a loop!"))
 }
 
+#[derive(Clone, Debug)]
 struct NodeMapEntry {
     l: Node,
     r: Node,
@@ -82,7 +77,7 @@ struct NodeMapEntry {
 struct ParseOutput<'a> {
     directions: Vec<Direction>,
     names_map: HashMap<&'a str, u16>,
-    nodes_map: BTreeMap<u16, NodeMapEntry>,
+    nodes: Vec<NodeMapEntry>,
     ghost_starts: Vec<u16>,
 }
 
@@ -100,16 +95,21 @@ fn parse(input: &str) -> Result<ParseOutput> {
     it.next();
 
     let mut names_count = 0;
-    let mut nodes_map = BTreeMap::new();
     let mut names_map = HashMap::new();
     let mut ghost_starts = Vec::new();
     let mut ghost_ends = BTreeSet::new();
+    let mut nodes = Vec::new();
     for line in it {
         let (_, (a, b, c)) = parse_node(line).map_err(|e| anyhow!("Node parse error {:?}", e))?;
         for name in [a, b, c] {
             if !names_map.contains_key(name) {
-                names_count += 1;
                 names_map.insert(name, names_count);
+                names_count += 1;
+                nodes.push(NodeMapEntry {
+                    is_end: false,
+                    l: 0,
+                    r: 0,
+                });
             }
         }
         let (source, l, r) = (names_map[a], names_map[b], names_map[c]);
@@ -125,12 +125,12 @@ fn parse(input: &str) -> Result<ParseOutput> {
             }
             _ => {}
         }
-        nodes_map.insert(source, NodeMapEntry { is_end, l, r });
+        nodes[source as usize] = NodeMapEntry { is_end, l, r };
     }
     Ok(ParseOutput {
         directions,
         names_map,
-        nodes_map,
+        nodes,
         ghost_starts,
     })
 }
