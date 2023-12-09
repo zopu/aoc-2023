@@ -23,27 +23,23 @@ fn parse_line(input: &str) -> IResult<&str, Vec<i32>> {
 }
 
 fn find_next<'a>(seq: impl Iterator<Item = &'a i32>) -> i32 {
-    seq.fold(
-        Vec::with_capacity(20),
-        |mut v: Vec<i32>, n: &i32| -> Vec<i32> {
-            if v.is_empty() {
-                v.push(*n);
-                return v;
-            };
-            let mut last_v_i = v[0];
-            v[0] = *n;
-            for i in 1..v.len() {
-                (last_v_i, v[i]) = (v[i], v[i - 1] - last_v_i);
-            }
-            let diff = v[v.len() - 1] - last_v_i;
-            if diff != 0 {
-                v.push(diff);
-            }
-            v
-        },
-    )
-    .iter()
-    .sum()
+    let mut v = Vec::with_capacity(20);
+    for &n in seq {
+        if v.is_empty() {
+            v.push(n);
+            continue;
+        }
+        let mut last_value = v[0];
+        v[0] = n;
+        for i in 1..v.len() {
+            (last_value, v[i]) = (v[i], v[i - 1] - last_value);
+        }
+        let diff = v[v.len() - 1] - last_value;
+        if diff != 0 {
+            v.push(diff);
+        }
+    }
+    v.iter().sum()
 }
 
 #[cfg(test)]
