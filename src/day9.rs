@@ -1,9 +1,10 @@
 use color_eyre::{eyre::anyhow, Result};
 use nom::{bytes::complete::tag, character::complete::i32, multi::separated_list1, IResult};
+use rayon::{iter::ParallelIterator, str::ParallelString};
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let (p1, p2) = input
-        .lines()
+        .par_lines()
         .map(|l| {
             let (_, mut v) = parse_line(l)
                 .map_err(|e| anyhow!("Parse error: {}", e))
@@ -13,8 +14,10 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
             let p2 = find_next(&v);
             (p1, p2)
         })
-        .reduce(|(p1sum, p2sum), (p1, p2)| (p1sum + p1, p2sum + p2))
-        .unwrap();
+        .reduce(
+            || (0, 0),
+            |(p1sum, p2sum), (p1, p2)| (p1sum + p1, p2sum + p2),
+        );
     Ok((p1 as u64, p2 as u64))
 }
 
