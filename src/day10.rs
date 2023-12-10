@@ -150,37 +150,29 @@ fn part2(mut grid: Grid, first_pipe: Position, pipes_in_loop: &HashSet<Position>
         let pipe_char = grid.get(pos.0, pos.1);
         let l_and_r_table = [
             // pipe char, dx, dy, of current move, dx, dy of 'side' position, l or r for side position
-            ('|', 0, 1, 1, 0, 'l'),
-            ('|', 0, 1, -1, 0, 'r'),
-            ('|', 0, -1, -1, 0, 'l'),
-            ('|', 0, -1, 1, 0, 'r'),
-            ('-', -1, 0, 0, 1, 'l'),
-            ('-', -1, 0, 0, -1, 'r'),
-            ('-', 1, 0, 0, -1, 'l'),
-            ('-', 1, 0, 0, 1, 'r'),
-            ('J', 0, 1, 1, 0, 'l'),
-            ('J', 0, 1, 0, 1, 'l'),
-            ('J', 1, 0, 1, 0, 'r'),
-            ('J', 1, 0, 0, 1, 'r'),
-            ('L', 0, 1, -1, 0, 'r'),
-            ('L', 0, 1, 0, 1, 'r'),
-            ('L', -1, 0, -1, 0, 'l'),
-            ('L', -1, 0, 0, 1, 'l'),
-            ('F', -1, 0, -1, 0, 'r'),
-            ('F', -1, 0, 0, -1, 'r'),
-            ('F', 0, -1, -1, 0, 'l'),
-            ('F', 0, -1, 0, -1, 'l'),
-            ('7', 1, 0, 0, -1, 'l'),
-            ('7', 1, 0, 1, 0, 'l'),
-            ('7', 0, -1, 0, -1, 'r'),
-            ('7', 0, -1, 1, 0, 'r'),
+            ('|', 0, 1, (1, 0, 'l'), (-1, 0, 'r')),
+            ('|', 0, -1, (-1, 0, 'l'), (1, 0, 'r')),
+            ('-', 1, 0, (0, -1, 'l'), (0, 1, 'r')),
+            ('-', -1, 0, (0, 1, 'l'), (0, -1, 'r')),
+            ('J', 0, 1, (1, 0, 'l'), (0, 1, 'l')),
+            ('J', 1, 0, (1, 0, 'r'), (0, 1, 'r')),
+            ('L', 0, 1, (0, 1, 'r'), (-1, 0, 'r')),
+            ('L', -1, 0, (0, 1, 'l'), (-1, 0, 'l')),
+            ('F', -1, 0, (-1, 0, 'r'), (0, -1, 'r')),
+            ('F', 0, -1, (-1, 0, 'l'), (0, -1, 'l')),
+            ('7', 1, 0, (0, -1, 'l'), (1, 0, 'l')),
+            ('7', 0, -1, (1, 0, 'r'), (0, -1, 'r')),
         ];
-        for (match_char, dx, dy, side_dx, side_dy, side_char) in l_and_r_table.iter() {
+        'inner: for (match_char, dx, dy, side_1, side_2) in l_and_r_table.iter() {
             if pipe_char == *match_char && dx == &(pos.0 - prev.0) && dy == &(pos.1 - prev.1) {
-                let (x, y) = (pos.0 + side_dx, pos.1 + side_dy);
-                if grid.in_bounds(x, y) && !pipes_in_loop.contains(&(x, y)) {
-                    grid.set(x, y, *side_char);
+                for side in [side_1, side_2].iter() {
+                    let (side_dx, side_dy, side_char) = side;
+                    let (x, y) = (pos.0 + side_dx, pos.1 + side_dy);
+                    if grid.in_bounds(x, y) && !pipes_in_loop.contains(&(x, y)) {
+                        grid.set(x, y, *side_char);
+                    }
                 }
+                break 'inner;
             }
         }
 
