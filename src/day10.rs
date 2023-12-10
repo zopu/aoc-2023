@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::Debug};
+use std::fmt::Debug;
 
 use color_eyre::Result;
 
@@ -83,8 +83,6 @@ impl From<&str> for Grid {
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let grid = Grid::from(input);
     // Find the adjacent pipes with the correct orientation
-    let mut pipes_in_loop = HashSet::new();
-    pipes_in_loop.insert(grid.start);
     let first_pipes = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         .iter()
         .filter_map(|(dx, dy)| {
@@ -110,7 +108,6 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     while next != grid.start {
         shoelace_sum += prev.0 as i64 * next.1 as i64 - prev.1 as i64 * next.0 as i64;
         count += 1;
-        pipes_in_loop.insert(next);
         (next, prev) = (follow_pipe(next, prev, grid.get(next.0, next.1)), next);
     }
     shoelace_sum += prev.0 as i64 * next.1 as i64 - prev.1 as i64 * next.0 as i64;
