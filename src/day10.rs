@@ -12,9 +12,6 @@ impl Grid {
     fn get(&self, x: i32, y: i32) -> char {
         self.grid[y as usize * self.dimensions.0 + x as usize]
     }
-    fn set(&mut self, x: i32, y: i32, c: char) {
-        self.grid[y as usize * self.dimensions.0 + x as usize] = c;
-    }
 
     fn in_bounds(&self, x: i32, y: i32) -> bool {
         x >= 0 && y >= 0 && x < self.dimensions.0 as i32 && y < self.dimensions.1 as i32
@@ -109,99 +106,18 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     let (mut next, mut prev) = (first_pipes[0], grid.start);
 
     let mut count = 1;
+    let mut shoelace_sum: i64 = 0;
     while next != grid.start {
+        shoelace_sum += prev.0 as i64 * next.1 as i64 - prev.1 as i64 * next.0 as i64;
         count += 1;
         pipes_in_loop.insert(next);
         (next, prev) = (follow_pipe(next, prev, grid.get(next.0, next.1)), next);
     }
+    shoelace_sum += prev.0 as i64 * next.1 as i64 - prev.1 as i64 * next.0 as i64;
+    // Pick's formula
+    let p2 = shoelace_sum.unsigned_abs() / 2 - (count as u64 / 2) + 1;
 
-    let p2 = part2(grid, first_pipes[0], &pipes_in_loop);
-    Ok((count / 2_u64, p2))
-}
-
-fn part2(mut grid: Grid, first_pipe: Position, pipes_in_loop: &HashSet<Position>) -> u64 {
-    // We're going to flood fill the grid with points either on the left (l) or right (r) of the loop
-    // We can see that (0, 0) is not on the loop, so that will tell us which of l and r is the outside
-    // Then we count the l or r chars in the grid for the answer
-
-    // First traverse the loop and mark everything on the l or r that isn't in the loop
-    let (mut pos, mut prev) = (first_pipe, grid.start);
-    while grid.get(pos.0, pos.1) != 'S' {
-        let pipe_char = grid.get(pos.0, pos.1);
-        let l_and_r_table = [
-            // pipe char, dx, dy, of current move, dx, dy of 'side' position, l or r for side position
-            ('|', 0, 1, (1, 0, 'l'), (-1, 0, 'r')),
-            ('|', 0, -1, (-1, 0, 'l'), (1, 0, 'r')),
-            ('-', 1, 0, (0, -1, 'l'), (0, 1, 'r')),
-            ('-', -1, 0, (0, 1, 'l'), (0, -1, 'r')),
-            ('J', 0, 1, (1, 0, 'l'), (0, 1, 'l')),
-            ('J', 1, 0, (1, 0, 'r'), (0, 1, 'r')),
-            ('L', 0, 1, (0, 1, 'r'), (-1, 0, 'r')),
-            ('L', -1, 0, (0, 1, 'l'), (-1, 0, 'l')),
-            ('F', -1, 0, (-1, 0, 'r'), (0, -1, 'r')),
-            ('F', 0, -1, (-1, 0, 'l'), (0, -1, 'l')),
-            ('7', 1, 0, (0, -1, 'l'), (1, 0, 'l')),
-            ('7', 0, -1, (1, 0, 'r'), (0, -1, 'r')),
-        ];
-        'inner: for (match_char, dx, dy, side_1, side_2) in l_and_r_table.iter() {
-            if pipe_char == *match_char && dx == &(pos.0 - prev.0) && dy == &(pos.1 - prev.1) {
-                for side in [side_1, side_2].iter() {
-                    let (side_dx, side_dy, side_char) = side;
-                    let (x, y) = (pos.0 + side_dx, pos.1 + side_dy);
-                    if grid.in_bounds(x, y) && !pipes_in_loop.contains(&(x, y)) {
-                        grid.set(x, y, *side_char);
-                    }
-                }
-                break 'inner;
-            }
-        }
-
-        let next = follow_pipe(pos, prev, pipe_char);
-        (pos, prev) = (next, pos);
-    }
-    // Now we flood fill the grid until nothing changes
-    let mut changed = true;
-    while changed {
-        changed = false;
-        for i in 0..grid.dimensions.0 {
-            for j in 0..grid.dimensions.1 {
-                let c = grid.get(i as i32, j as i32);
-                if c == 'l' || c == 'r' || c == 'X' {
-                    continue;
-                }
-                if pipes_in_loop.contains(&(i as i32, j as i32)) {
-                    grid.set(i as i32, j as i32, 'X');
-                    continue;
-                }
-                for n in neighbours((i as i32, j as i32), &grid) {
-                    let n_c = grid.get(n.0, n.1);
-                    if n_c == 'l' {
-                        grid.set(i as i32, j as i32, 'l');
-                        changed = true;
-                    } else if n_c == 'r' {
-                        grid.set(i as i32, j as i32, 'r');
-                        changed = true;
-                    }
-                }
-            }
-        }
-    }
-
-    // Work out whether l or r is the outside
-    let inside_char = if let 'l' = grid.get(0, 0) { 'r' } else { 'l' };
-
-    // Spot any unclassified points
-    for i in 0..grid.dimensions.0 {
-        for j in 0..grid.dimensions.1 {
-            let c = grid.get(i as i32, j as i32);
-            if c != 'X' && c != 'l' && c != 'r' && c != 'O' {
-                println!("Unclassified point at {:?} {}", (i, j), c);
-            }
-        }
-    }
-
-    // Count the inside chars
-    grid.grid.iter().filter(|c| **c == inside_char).count() as u64
+    Ok((count as u64 / 2_u64, p2))
 }
 
 fn follow_pipe(pos: Position, prev: Position, pipe_char: char) -> Position {
@@ -211,20 +127,6 @@ fn follow_pipe(pos: Position, prev: Position, pipe_char: char) -> Position {
         Direction::Right => (pos.0 + 1, pos.1),
         Direction::Left => (pos.0 - 1, pos.1),
     }
-}
-
-fn neighbours(pos: Position, grid: &Grid) -> Vec<Position> {
-    let mut neighbours = Vec::new();
-    for (dx, dy) in [(0, 1), (1, 0), (0, -1), (-1, 0)].iter() {
-        let (x, y) = (pos.0 + dx, pos.1 + dy);
-        if x < 0 || y < 0 {
-            continue;
-        }
-        if grid.in_bounds(x, y) {
-            neighbours.push((x, y));
-        }
-    }
-    neighbours
 }
 
 #[cfg(test)]
