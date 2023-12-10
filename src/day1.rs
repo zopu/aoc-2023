@@ -5,7 +5,8 @@ const DIGITS: [&str; 10] = [
 ];
 
 pub fn run(input: &str) -> color_eyre::Result<(u64, u64)> {
-    Ok((part1(input)? as u64, part2(input)? as u64))
+    let (p1, p2) = rayon::join(|| part1(&input), || part2(&input));
+    Ok((p1? as u64, p2? as u64))
 }
 
 fn part1(input: &str) -> color_eyre::Result<u32> {
