@@ -219,10 +219,7 @@ fn part2(mut grid: Grid, first_pipe: Position, pipes_in_loop: &HashSet<Position>
         for i in 0..grid.dimensions.0 {
             for j in 0..grid.dimensions.1 {
                 let c = grid.get(i as i32, j as i32);
-                // if c == 'l' || c == 'r' || c == 'X' {
-                //     continue;
-                // }
-                if c == 'X' {
+                if c == 'l' || c == 'r' || c == 'X' {
                     continue;
                 }
                 if pipes_in_loop.contains(&(i as i32, j as i32)) {
@@ -233,22 +230,10 @@ fn part2(mut grid: Grid, first_pipe: Position, pipes_in_loop: &HashSet<Position>
                     let n_c = grid.get(n.0, n.1);
                     if n_c == 'l' {
                         grid.set(i as i32, j as i32, 'l');
-                        if c != n_c {
-                            changed = true;
-                            if c == 'r' {
-                                println!("Changed r to l at {:?}", (i, j));
-                            }
-                        }
-                        // changed = true;
+                        changed = true;
                     } else if n_c == 'r' {
                         grid.set(i as i32, j as i32, 'r');
-                        if c != n_c {
-                            changed = true;
-                            if c == 'l' {
-                                println!("Changed l to r at {:?}", (i, j));
-                            }
-                        }
-                        // changed = true;
+                        changed = true;
                     }
                 }
             }
