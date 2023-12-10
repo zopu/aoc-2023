@@ -145,69 +145,44 @@ fn part2(mut grid: Grid, first_pipe: Position, pipes_in_loop: &HashSet<Position>
     // Then we count the l or r chars in the grid for the answer
 
     // First traverse the loop and mark everything on the l or r that isn't in the loop
-    // println!("Pipes in loop: {:?}", pipes_in_loop);
     let (mut pos, mut prev) = (first_pipe, grid.start);
-    let check_pipe_and_set = |g: &mut Grid, pos: Position, c: char| {
-        if g.in_bounds(pos.0, pos.1) && !pipes_in_loop.contains(&pos) {
-            g.set(pos.0, pos.1, c);
-        }
-    };
     while grid.get(pos.0, pos.1) != 'S' {
         let pipe_char = grid.get(pos.0, pos.1);
-        let dx = pos.0 - prev.0;
-        let dy = pos.1 - prev.1;
-        // NB we don't handle corners here and might need to, but this might be enough
-        match (grid.get(pos.0, pos.1), dx, dy) {
-            ('|', 0, 1) => {
-                check_pipe_and_set(&mut grid, (pos.0 + 1, pos.1), 'l');
-                check_pipe_and_set(&mut grid, (pos.0 - 1, pos.1), 'r');
+        let l_and_r_table = [
+            // pipe char, dx, dy, of current move, dx, dy of 'side' position, l or r for side position
+            ('|', 0, 1, 1, 0, 'l'),
+            ('|', 0, 1, -1, 0, 'r'),
+            ('|', 0, -1, -1, 0, 'l'),
+            ('|', 0, -1, 1, 0, 'r'),
+            ('-', -1, 0, 0, 1, 'l'),
+            ('-', -1, 0, 0, -1, 'r'),
+            ('-', 1, 0, 0, -1, 'l'),
+            ('-', 1, 0, 0, 1, 'r'),
+            ('J', 0, 1, 1, 0, 'l'),
+            ('J', 0, 1, 0, 1, 'l'),
+            ('J', 1, 0, 1, 0, 'r'),
+            ('J', 1, 0, 0, 1, 'r'),
+            ('L', 0, 1, -1, 0, 'r'),
+            ('L', 0, 1, 0, 1, 'r'),
+            ('L', -1, 0, -1, 0, 'l'),
+            ('L', -1, 0, 0, 1, 'l'),
+            ('F', -1, 0, -1, 0, 'r'),
+            ('F', -1, 0, 0, -1, 'r'),
+            ('F', 0, -1, -1, 0, 'l'),
+            ('F', 0, -1, 0, -1, 'l'),
+            ('7', 1, 0, 0, -1, 'l'),
+            ('7', 1, 0, 1, 0, 'l'),
+            ('7', 0, -1, 0, -1, 'r'),
+            ('7', 0, -1, 1, 0, 'r'),
+        ];
+        for (match_char, dx, dy, side_dx, side_dy, side_char) in l_and_r_table.iter() {
+            if pipe_char == *match_char && dx == &(pos.0 - prev.0) && dy == &(pos.1 - prev.1) {
+                let (x, y) = (pos.0 + side_dx, pos.1 + side_dy);
+                if grid.in_bounds(x, y) && !pipes_in_loop.contains(&(x, y)) {
+                    grid.set(x, y, *side_char);
+                }
             }
-            ('|', 0, -1) => {
-                check_pipe_and_set(&mut grid, (pos.0 - 1, pos.1), 'l');
-                check_pipe_and_set(&mut grid, (pos.0 + 1, pos.1), 'r');
-            }
-            ('-', -1, 0) => {
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 + 1), 'l');
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 - 1), 'r');
-            }
-            ('-', 1, 0) => {
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 - 1), 'l');
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 + 1), 'r');
-            }
-            ('J', 0, 1) => {
-                check_pipe_and_set(&mut grid, (pos.0 + 1, pos.1), 'l');
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 + 1), 'l');
-            }
-            ('J', 1, 0) => {
-                check_pipe_and_set(&mut grid, (pos.0 + 1, pos.1), 'r');
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 + 1), 'r');
-            }
-            ('L', 0, 1) => {
-                check_pipe_and_set(&mut grid, (pos.0 - 1, pos.1), 'r');
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 + 1), 'r');
-            }
-            ('L', -1, 0) => {
-                check_pipe_and_set(&mut grid, (pos.0 - 1, pos.1), 'l');
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 + 1), 'l');
-            }
-            ('F', -1, 0) => {
-                check_pipe_and_set(&mut grid, (pos.0 - 1, pos.1), 'r');
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 - 1), 'r');
-            }
-            ('F', 0, -1) => {
-                check_pipe_and_set(&mut grid, (pos.0 - 1, pos.1), 'l');
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 - 1), 'l');
-            }
-            ('7', 1, 0) => {
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 - 1), 'l');
-                check_pipe_and_set(&mut grid, (pos.0 + 1, pos.1), 'l');
-            }
-            ('7', 0, -1) => {
-                check_pipe_and_set(&mut grid, (pos.0, pos.1 - 1), 'r');
-                check_pipe_and_set(&mut grid, (pos.0 + 1, pos.1), 'r');
-            }
-            _ => panic!("Invalid direction {},{}", dx, dy),
-        };
+        }
 
         let next = follow_pipe(pos, prev, pipe_char);
         (pos, prev) = (next, pos);
