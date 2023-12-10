@@ -92,9 +92,6 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
         .iter()
         .filter_map(|(dx, dy)| {
             let (x, y) = (grid.start.0 + dx, grid.start.1 + dy);
-            if x < 0 || y < 0 {
-                return None;
-            }
             if grid.in_bounds(x, y) {
                 match (dx, dy, grid.get(x, y)) {
                     (0, 1, '|' | 'J' | 'L') => Some((x, y)),
@@ -107,36 +104,19 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
                 None
             }
         })
-        .map(|pos| (grid.start, pos))
         .collect::<Vec<_>>();
-    let mut pipes = first_pipes.clone();
-    assert_eq!(2, pipes.len());
-    pipes.iter().for_each(|p| {
-        pipes_in_loop.insert(p.1);
-    });
+    assert_eq!(2, first_pipes.len());
+    let (mut next, mut prev) = (first_pipes[0], grid.start);
+
     let mut count = 1;
-    loop {
+    while next != grid.start {
         count += 1;
-        pipes = pipes
-            .iter()
-            .map(|p| {
-                let new_pos = follow_pipe(p.1, p.0, grid.get(p.1 .0, p.1 .1));
-                pipes_in_loop.insert(new_pos);
-                (p.1, new_pos)
-            })
-            .collect();
-        if pipes[0].1 == pipes[1].1 {
-            break;
-        }
-        if pipes[0].1 == pipes[1].0 {
-            count -= 1;
-            break;
-        }
+        pipes_in_loop.insert(next);
+        (next, prev) = (follow_pipe(next, prev, grid.get(next.0, next.1)), next);
     }
 
-    let p2 = part2(grid, first_pipes[0].1, &pipes_in_loop);
-    // println!("Part 2: {}", p2);
-    Ok((count as u64, p2))
+    let p2 = part2(grid, first_pipes[0], &pipes_in_loop);
+    Ok((count / 2_u64, p2))
 }
 
 fn part2(mut grid: Grid, first_pipe: Position, pipes_in_loop: &HashSet<Position>) -> u64 {
