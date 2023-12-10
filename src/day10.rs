@@ -5,16 +5,16 @@ use color_eyre::Result;
 struct Grid {
     grid: Vec<char>,
     dimensions: (usize, usize),
-    start: (i32, i32),
+    start: (usize, usize),
 }
 
 impl Grid {
-    fn get(&self, x: i32, y: i32) -> char {
-        self.grid[y as usize * self.dimensions.0 + x as usize]
+    fn get(&self, x: usize, y: usize) -> char {
+        self.grid[y * self.dimensions.0 + x]
     }
 
-    fn in_bounds(&self, x: i32, y: i32) -> bool {
-        x >= 0 && y >= 0 && x < self.dimensions.0 as i32 && y < self.dimensions.1 as i32
+    fn in_bounds(&self, x: usize, y: usize) -> bool {
+        x < self.dimensions.0 && y < self.dimensions.1
     }
 }
 
@@ -22,7 +22,7 @@ impl Debug for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for y in 0..self.dimensions.1 {
             for x in 0..self.dimensions.0 {
-                write!(f, "{}", self.get(x as i32, y as i32))?;
+                write!(f, "{}", self.get(x, y))?;
             }
             writeln!(f)?;
         }
@@ -30,7 +30,7 @@ impl Debug for Grid {
     }
 }
 
-type Position = (i32, i32);
+type Position = (usize, usize);
 
 enum Direction {
     Up,
@@ -41,8 +41,8 @@ enum Direction {
 
 impl Direction {
     fn of_pipe(pipe_char: char, pos: Position, prev: Position) -> Self {
-        let dx = pos.0 - prev.0;
-        let dy = pos.1 - prev.1;
+        let dx = pos.0 as i32 - prev.0 as i32;
+        let dy = pos.1 as i32 - prev.1 as i32;
         match (pipe_char, dx, dy) {
             ('|', 0, 1) | ('7', 1, 0) | ('F', -1, 0) => Self::Down,
             ('|', 0, -1) | ('L', -1, 0) | ('J', 1, 0) => Self::Up,
@@ -68,10 +68,7 @@ impl From<&str> for Grid {
             })
             .collect();
         let dimensions = (input.lines().next().unwrap().len(), input.lines().count());
-        let start = (
-            (start_pos % dimensions.0) as i32,
-            (start_pos / dimensions.0) as i32,
-        );
+        let start = ((start_pos % dimensions.0), (start_pos / dimensions.0));
         Self {
             grid,
             dimensions,
@@ -86,7 +83,11 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     let first_pipes = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         .iter()
         .filter_map(|(dx, dy)| {
-            let (x, y) = (grid.start.0 + dx, grid.start.1 + dy);
+            let (x, y) = (grid.start.0 as i32 + dx, grid.start.1 as i32 + dy);
+            if x < 0 || y < 0 {
+                return None;
+            }
+            let (x, y) = (x as usize, y as usize);
             if grid.in_bounds(x, y) {
                 match (dx, dy, grid.get(x, y)) {
                     (0, 1, '|' | 'J' | 'L') => Some((x, y)),
