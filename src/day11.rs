@@ -43,7 +43,8 @@ impl Universe {
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let universe = parse(input)?;
-    Ok((solve(&universe, 2), solve(&universe, 1_000_000)))
+    let (p1, p2) = rayon::join(|| solve(&universe, 2), || solve(&universe, 1_000_000));
+    Ok((p1, p2))
 }
 
 fn solve(universe: &Universe, expansion: usize) -> u64 {
