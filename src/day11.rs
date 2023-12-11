@@ -50,12 +50,12 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
 fn solve(universe: &Universe, expansion: usize) -> u64 {
     let universe = universe.expand(expansion);
     let mut sum = 0;
-    for g1 in &universe.galaxies {
-        for g2 in &universe.galaxies {
+    for (i, g1) in universe.galaxies.iter().enumerate() {
+        for g2 in &universe.galaxies[i..] {
             sum += manhattan(g1, g2) as u64;
         }
     }
-    sum / 2
+    sum
 }
 
 fn manhattan(p1: &Point, p2: &Point) -> u32 {
