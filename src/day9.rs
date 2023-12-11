@@ -45,10 +45,10 @@ fn find_next<'a>(seq: impl Iterator<Item = &'a i32>) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runner::{test_input, test_sample};
+    use crate::runner::test::{input_test, sample_test};
 
-    test_sample!(sample_part1, 9, Some(114), None);
-    test_sample!(sample_part2, 9, None, Some(2));
-    test_input!(part1, 9, Some(1819125966), None);
-    test_input!(part2, 9, None, Some(1140));
+    sample_test!(sample_part1, 9, Some(114), None);
+    sample_test!(sample_part2, 9, None, Some(2));
+    input_test!(part1, 9, Some(1819125966), None);
+    input_test!(part2, 9, None, Some(1140));
 }

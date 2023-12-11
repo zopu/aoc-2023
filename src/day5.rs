@@ -143,12 +143,12 @@ mod tests {
     use color_eyre::eyre::anyhow;
 
     use super::*;
-    use crate::runner::{test_input, test_sample};
+    use crate::runner::test::{input_test, sample_test};
 
-    test_sample!(sample_part1, 5, Some(35), None);
-    test_sample!(sample_part2, 5, None, Some(46));
-    test_input!(part1, 5, Some(251346198), None);
-    test_input!(part2, 5, None, Some(72263011));
+    sample_test!(sample_part1, 5, Some(35), None);
+    sample_test!(sample_part2, 5, None, Some(46));
+    input_test!(part1, 5, Some(251346198), None);
+    input_test!(part2, 5, None, Some(72263011));
 
     #[test]
     fn can_parse_sample() -> Result<()> {

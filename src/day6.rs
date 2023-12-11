@@ -76,13 +76,13 @@ mod tests {
     use super::*;
     use crate::{
         day6::solve,
-        runner::{test_input, test_sample},
+        runner::test::{input_test, sample_test},
     };
 
-    test_sample!(sample_part1, 6, Some(288), None);
-    test_sample!(sample_part2, 6, None, Some(71503));
-    test_input!(part1, 6, Some(512295), None);
-    test_input!(part2, 6, None, Some(36530883));
+    sample_test!(sample_part1, 6, Some(288), None);
+    sample_test!(sample_part2, 6, None, Some(71503));
+    input_test!(part1, 6, Some(512295), None);
+    input_test!(part2, 6, None, Some(36530883));
 
     #[test]
     fn can_solve_problem() {

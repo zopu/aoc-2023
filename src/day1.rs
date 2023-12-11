@@ -62,12 +62,12 @@ fn leading_digit(s: &str) -> Option<u32> {
 
 #[cfg(test)]
 mod tests {
-    use crate::runner::{test_input, test_sample};
+    use crate::runner::test::{input_test, sample_test};
 
     use super::*;
 
-    test_sample!(sample_part1, 1, Some(142), None);
-    test_input!(real, 1, Some(55816), Some(54980));
+    sample_test!(sample_part1, 1, Some(142), None);
+    input_test!(real, 1, Some(55816), Some(54980));
 
     #[test]
     fn sample_part2() -> color_eyre::Result<()> {

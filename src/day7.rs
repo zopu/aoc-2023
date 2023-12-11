@@ -123,10 +123,10 @@ fn parse_hand(line: &str) -> Result<(Hand, Bid)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runner::{test_input, test_sample};
+    use crate::runner::test::{input_test, sample_test};
 
-    test_sample!(sample_part1, 7, Some(6440), None);
-    test_sample!(sample_part2, 7, None, Some(5905));
-    test_input!(part1, 7, Some(250347426), None);
-    test_input!(part2, 7, None, Some(251224870));
+    sample_test!(sample_part1, 7, Some(6440), None);
+    sample_test!(sample_part2, 7, None, Some(5905));
+    input_test!(part1, 7, Some(250347426), None);
+    input_test!(part2, 7, None, Some(251224870));
 }

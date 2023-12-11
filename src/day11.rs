@@ -81,12 +81,12 @@ fn parse(input: &str) -> Result<Universe> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runner::{test_input, test_sample};
+    use crate::runner::test::{input_test, sample_test};
 
-    test_sample!(sample_part1, 11, Some(374), None);
-    test_sample!(sample_part2, 11, None, Some(82000210));
-    test_input!(part1, 11, Some(9329143), None);
-    test_input!(part2, 11, None, Some(710674907809));
+    sample_test!(sample_part1, 11, Some(374), None);
+    sample_test!(sample_part2, 11, None, Some(82000210));
+    input_test!(part1, 11, Some(9329143), None);
+    input_test!(part2, 11, None, Some(710674907809));
 
     #[test]
     fn sample_part2_at_different_scales() -> color_eyre::Result<()> {

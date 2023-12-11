@@ -130,15 +130,15 @@ fn follow_pipe(pos: Position, prev: Position, pipe_char: char) -> Position {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runner::{test_file, test_input, test_sample};
+    use crate::runner::test::{file_test, input_test, sample_test};
 
-    test_sample!(sample_part1, 10, Some(4), None);
-    test_input!(part1, 10, Some(6923), None);
-    test_sample!(sample_part2, 10, None, Some(1));
-    test_input!(part2, 10, None, Some(529));
+    sample_test!(sample_part1, 10, Some(4), None);
+    input_test!(part1, 10, Some(6923), None);
+    sample_test!(sample_part2, 10, None, Some(1));
+    input_test!(part2, 10, None, Some(529));
 
-    test_file!(sample_part2_complex, 10, "sample_part2.txt", None, Some(8));
-    test_file!(sample_part2_2, 10, "sample_part2_2.txt", None, Some(4));
-    test_file!(sample_part2_3, 10, "sample_part2_3.txt", None, Some(4));
-    test_file!(sample_part2_4, 10, "sample_part2_4.txt", None, Some(8));
+    file_test!(sample_part2_complex, 10, "sample_part2.txt", None, Some(8));
+    file_test!(sample_part2_2, 10, "sample_part2_2.txt", None, Some(4));
+    file_test!(sample_part2_3, 10, "sample_part2_3.txt", None, Some(4));
+    file_test!(sample_part2_4, 10, "sample_part2_4.txt", None, Some(8));
 }

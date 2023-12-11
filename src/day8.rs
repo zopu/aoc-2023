@@ -151,11 +151,11 @@ pub fn parse_node(line: &str) -> IResult<&str, (&str, &str, &str)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runner::{test_input, test_sample};
+    use crate::runner::test::{input_test, sample_test};
 
-    test_sample!(sample_part1, 8, Some(6), None);
-    test_input!(part1, 8, Some(15517), None);
-    test_input!(part2, 8, None, Some(14935034899483));
+    sample_test!(sample_part1, 8, Some(6), None);
+    input_test!(part1, 8, Some(15517), None);
+    input_test!(part2, 8, None, Some(14935034899483));
 
     #[test]
     fn sample_part2() -> color_eyre::Result<()> {

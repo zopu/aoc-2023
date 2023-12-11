@@ -61,12 +61,12 @@ fn scratchcard_matches(card: &str) -> Result<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runner::{test_input, test_sample};
+    use crate::runner::test::{input_test, sample_test};
 
-    test_sample!(sample_part1, 4, Some(13), None);
-    test_sample!(sample_part2, 4, None, Some(30));
-    test_input!(part1, 4, Some(17782), None);
-    test_input!(part2, 4, None, Some(8477787));
+    sample_test!(sample_part1, 4, Some(13), None);
+    sample_test!(sample_part2, 4, None, Some(30));
+    input_test!(part1, 4, Some(17782), None);
+    input_test!(part2, 4, None, Some(8477787));
 
     #[test]
     fn test_parse_line() {

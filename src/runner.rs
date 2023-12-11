@@ -30,40 +30,29 @@ pub fn normal_day(
 }
 
 #[cfg(test)]
-macro_rules! test_sample {
-    ( $name: ident, $day: literal, $part1: expr, $part2: expr) => {
-        #[test]
-        fn $name() {
-            crate::runner::test_one_file(run, $day, "sample.txt", $part1, $part2).unwrap()
-        }
-    };
+pub mod test {
+    macro_rules! file_test {
+        ( $name: ident, $day: literal, $filename: literal, $part1: expr, $part2: expr) => {
+            #[test]
+            fn $name() {
+                crate::runner::test_one_file(run, $day, $filename, $part1, $part2).unwrap()
+            }
+        };
+    }
+    pub(crate) use file_test;
+
+    macro_rules! sample_test {
+        ( $name: ident, $day: literal, $part1: expr, $part2: expr) => {
+            crate::runner::test::file_test!($name, $day, "sample.txt", $part1, $part2);
+        };
+    }
+    pub(crate) use sample_test;
+
+    #[cfg(test)]
+    macro_rules! input_test {
+        ( $name: ident, $day: literal, $part1: expr, $part2: expr) => {
+            crate::runner::test::file_test!($name, $day, "input.txt", $part1, $part2);
+        };
+    }
+    pub(crate) use input_test;
 }
-
-#[cfg(test)]
-pub(crate) use test_sample;
-
-#[cfg(test)]
-macro_rules! test_input {
-    ( $name: ident, $day: literal, $part1: expr, $part2: expr) => {
-        #[test]
-        fn $name() {
-            crate::runner::test_one_file(run, $day, "input.txt", $part1, $part2).unwrap()
-        }
-    };
-}
-
-#[cfg(test)]
-pub(crate) use test_input;
-
-#[cfg(test)]
-macro_rules! test_file {
-    ( $name: ident, $day: literal, $filename: literal, $part1: expr, $part2: expr) => {
-        #[test]
-        fn $name() {
-            crate::runner::test_one_file(run, $day, $filename, $part1, $part2).unwrap()
-        }
-    };
-}
-
-#[cfg(test)]
-pub(crate) use test_file;

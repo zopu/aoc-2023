@@ -86,18 +86,19 @@ fn part2(input: &str) -> color_eyre::Result<u32> {
 
 #[cfg(test)]
 mod tests {
-    use crate::runner::{test_input, test_sample};
+
+    use crate::runner::test::{input_test, sample_test};
 
     use super::*;
 
-    test_sample!(sample_part1, 2, Some(8), None);
-    test_input!(part1, 2, Some(2685), None);
-    test_sample!(sample_part2, 2, None, Some(2286));
+    sample_test!(sample_part1, 2, Some(8), None);
+    input_test!(part1, 2, Some(2685), None);
+    sample_test!(sample_part2, 2, None, Some(2286));
 
     #[test]
     fn can_parse_color_set() -> color_eyre::Result<()> {
         let input = "4 blue, 16 green, 2 red";
-        let (_, set) = super::parse::parse_set(input)?;
+        let (_, set) = parse::parse_set(input)?;
         assert_eq!(4, set.b);
         assert_eq!(16, set.g);
         assert_eq!(2, set.r);
@@ -107,7 +108,7 @@ mod tests {
     #[test]
     fn can_parse_game() -> color_eyre::Result<()> {
         let input = "Game 15: 4 blue, 16 green, 2 red; 5 red, 11 blue, 16 green; 9 green, 11 blue; 10 blue, 6 green, 4 red";
-        let (_, (n, sets)) = super::parse::parse_game(input)?;
+        let (_, (n, sets)) = parse::parse_game(input)?;
         assert_eq!(15, n);
         assert_eq!(4, sets.len());
 

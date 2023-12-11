@@ -124,14 +124,14 @@ fn is_adjacent(line: usize, col: usize, part: &Part) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::runner::{test_input, test_sample};
+    use crate::runner::test::{input_test, sample_test};
 
     use super::*;
 
-    test_sample!(sample_part1, 3, Some(4361), None);
-    test_input!(part1, 3, Some(527369), None);
-    test_input!(part2, 3, None, Some(73074886));
-    test_sample!(sample_part2, 3, None, Some(467835));
+    sample_test!(sample_part1, 3, Some(4361), None);
+    input_test!(part1, 3, Some(527369), None);
+    input_test!(part2, 3, None, Some(73074886));
+    sample_test!(sample_part2, 3, None, Some(467835));
 
     #[test]
     fn diagonal_input() {
