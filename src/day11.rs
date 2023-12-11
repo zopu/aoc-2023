@@ -11,30 +11,27 @@ struct Universe {
 impl Universe {
     fn expand(&self, expansion: usize) -> Self {
         let (mut rows, mut cols) = (vec![0; self.dimensions.1], vec![0; self.dimensions.0]);
-        for (c, r) in &self.galaxies {
-            rows[*r] = 1;
-            cols[*c] = 1;
+        for &(c, r) in &self.galaxies {
+            (rows[r], cols[c]) = (1, 1);
         }
-        let mut expanded = 0;
-        for (i, r) in rows.iter_mut().enumerate() {
+        let d_rows = rows.iter_mut().enumerate().fold(0, |mut expanded, (i, r)| {
             if *r == 0 {
                 expanded += expansion - 1;
             }
             *r = i + expanded;
-        }
-        let d_rows = expanded;
-        let mut expanded = 0;
-        for (i, c) in cols.iter_mut().enumerate() {
+            expanded
+        });
+        let d_cols = cols.iter_mut().enumerate().fold(0, |mut expanded, (i, c)| {
             if *c == 0 {
                 expanded += expansion - 1;
             }
             *c = i + expanded;
-        }
-        let d_cols = expanded;
+            expanded
+        });
         let galaxies = self
             .galaxies
             .iter()
-            .map(|(c, r)| (cols[*c], rows[*r]))
+            .map(|&(c, r)| (cols[c], rows[r]))
             .collect();
 
         Universe {
@@ -51,7 +48,7 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
 
 fn solve(universe: &Universe, expansion: usize) -> u64 {
     let universe = universe.expand(expansion);
-    let mut sum: u64 = 0;
+    let mut sum = 0;
     for g1 in &universe.galaxies {
         for g2 in &universe.galaxies {
             sum += manhattan(g1, g2) as u64;
