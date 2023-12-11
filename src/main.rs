@@ -14,12 +14,14 @@ mod day7;
 mod day8;
 mod day9;
 
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use runner::normal_day;
 
 #[derive(Debug)]
 struct AppArgs {
     opt_profile_day: Option<usize>,
     profile_times: usize,
+    parallel: bool,
 }
 
 const DAYS: [fn() -> color_eyre::Result<()>; 11] = [
@@ -50,19 +52,26 @@ fn main() -> color_eyre::Result<()> {
     if let Some(d) = args.opt_profile_day {
         profile_one_day(d, args.profile_times)?;
     } else {
-        run_all_days()?;
+        run_all_days(args.parallel)?;
     }
 
     Ok(())
 }
 
-fn run_all_days() -> color_eyre::Result<()> {
+fn run_all_days(parallel: bool) -> color_eyre::Result<()> {
     let start = Instant::now();
-    for (i, d) in DAYS.iter().enumerate() {
-        let day_start = Instant::now();
-        d()?;
-        let duration = Instant::now().duration_since(day_start);
-        println!("{:?}us day {} runtime", duration.as_micros(), i + 1);
+    if parallel {
+        DAYS.par_iter().for_each(|d| {
+            d().unwrap();
+        });
+    } else {
+        // Run in serial
+        for (i, d) in DAYS.iter().enumerate() {
+            let day_start = Instant::now();
+            d()?;
+            let duration = Instant::now().duration_since(day_start);
+            println!("{:?}us day {} runtime", duration.as_micros(), i + 1);
+        }
     }
 
     let duration = Instant::now().duration_since(start);
@@ -99,6 +108,7 @@ fn parse_args() -> color_eyre::Result<AppArgs, pico_args::Error> {
     let args = AppArgs {
         opt_profile_day: pargs.opt_value_from_str("--profile-day")?,
         profile_times: pargs.opt_value_from_str("--profile-times")?.unwrap_or(10),
+        parallel: pargs.contains("--parallel"),
     };
 
     Ok(args)
