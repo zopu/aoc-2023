@@ -54,3 +54,16 @@ macro_rules! test_input {
 
 #[cfg(test)]
 pub(crate) use test_input;
+
+#[cfg(test)]
+macro_rules! test_file {
+    ( $name: ident, $day: literal, $filename: literal, $part1: expr, $part2: expr) => {
+        #[test]
+        fn $name() {
+            crate::runner::test_one_file(run, $day, $filename, $part1, $part2).unwrap()
+        }
+    };
+}
+
+#[cfg(test)]
+pub(crate) use test_file;

@@ -130,42 +130,15 @@ fn follow_pipe(pos: Position, prev: Position, pipe_char: char) -> Position {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runner::{test_input, test_sample};
+    use crate::runner::{test_file, test_input, test_sample};
 
     test_sample!(sample_part1, 10, Some(4), None);
     test_input!(part1, 10, Some(6923), None);
     test_sample!(sample_part2, 10, None, Some(1));
     test_input!(part2, 10, None, Some(529));
 
-    #[test]
-    fn sample_part2_complex() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/10/sample_part2.txt")?;
-        let (_p1, p2) = run(&input)?;
-        assert_eq!(8, p2);
-        Ok(())
-    }
-
-    #[test]
-    fn sample_part2_2() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/10/sample_part2_2.txt")?;
-        let (_p1, p2) = run(&input)?;
-        assert_eq!(4, p2);
-        Ok(())
-    }
-
-    #[test]
-    fn sample_part2_3() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/10/sample_part2_3.txt")?;
-        let (_p1, p2) = run(&input)?;
-        assert_eq!(4, p2);
-        Ok(())
-    }
-
-    #[test]
-    fn sample_part2_4() -> color_eyre::Result<()> {
-        let input = std::fs::read_to_string("inputs/10/sample_part2_4.txt")?;
-        let (_p1, p2) = run(&input)?;
-        assert_eq!(8, p2);
-        Ok(())
-    }
+    test_file!(sample_part2_complex, 10, "sample_part2.txt", None, Some(8));
+    test_file!(sample_part2_2, 10, "sample_part2_2.txt", None, Some(4));
+    test_file!(sample_part2_3, 10, "sample_part2_3.txt", None, Some(4));
+    test_file!(sample_part2_4, 10, "sample_part2_4.txt", None, Some(8));
 }
