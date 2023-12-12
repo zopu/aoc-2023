@@ -23,10 +23,7 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
             let (_remaining, (springs, groups)) = parse_line(l)
                 .map_err(|e| anyhow!("Parse error: {}", e))
                 .unwrap();
-            // println!("{:?}, {:?}", springs, groups);
-            let combinations = count_combinations(&springs, &groups);
-            // println!("Combinations: {}", combinations);
-            combinations
+            count_combinations(&springs, &groups)
         })
         .sum();
     Ok((sum, 0))
@@ -81,6 +78,10 @@ fn count_combinations(springs: &[Spring], groups: &[u8]) -> u64 {
         return a + b;
     }
 
+    if springs[0] == Spring::Bad {
+        return 0;
+    }
+
     // Else just check the rest
     count_combinations(&springs[1..], groups)
 }
@@ -107,10 +108,10 @@ fn parse_line(input: &str) -> IResult<&str, (Vec<Spring>, Vec<u8>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runner::test::sample_test;
+    use crate::runner::test::{input_test, sample_test};
 
     sample_test!(sample_part1, 12, Some(21), None);
-    // input_test!(part1, 12, Some(0), None);
+    input_test!(part1, 12, Some(6852), None);
 
     #[test]
     fn test_weird_case() {
@@ -145,7 +146,7 @@ mod tests {
 
     #[test]
     fn extra_bad() {
-        let springs = vec![Spring::Bad, Spring::Good, Spring::Bad];
+        let springs = vec![Spring::Bad, Spring::Bad];
         let groups = vec![1];
         assert_eq!(0, count_combinations(&springs, &groups));
     }
