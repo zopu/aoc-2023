@@ -44,10 +44,12 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
             (s5, g5)
         })
         .collect();
+
     let p2: u64 = p2_parsed
         .par_iter()
         .map(|(s, g)| count_combinations(s, g, &mut Cache::new()))
         .sum();
+
     Ok((p1, p2))
 }
 
@@ -70,9 +72,9 @@ struct Cache {
 
 impl Cache {
     fn new() -> Self {
-        Cache {
-            cache: FxHashMap::default(),
-        }
+        let mut cache = FxHashMap::default();
+        cache.reserve(2000);
+        Cache { cache }
     }
 
     fn get(&self, key: &CacheKey) -> Option<u64> {
