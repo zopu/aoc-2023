@@ -120,9 +120,9 @@ fn format_runtime_elapsed(instant: &Instant) -> String {
 }
 
 fn format_runtime_duration(d: &Duration) -> String {
-    if d.as_micros() < 1000 {
+    if d.as_micros() < 5000 {
         format!("{}us", d.as_micros())
-    } else if d.as_millis() < 1000 {
+    } else if d.as_millis() < 2000 {
         format!("{}ms", d.as_millis())
     } else {
         format!("{}s", d.as_secs())
