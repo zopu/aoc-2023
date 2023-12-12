@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 mod runner;
 
@@ -71,18 +71,17 @@ fn run_all_days(parallel: bool) -> color_eyre::Result<()> {
         for (i, d) in DAYS.iter().enumerate() {
             let day_start = Instant::now();
             d()?;
-            let duration = Instant::now().duration_since(day_start);
-            println!("{:?}us day {} runtime", duration.as_micros(), i + 1);
+            println!("Day {}:\t{}", i + 1, format_runtime_elapsed(&day_start));
         }
     }
 
     let duration = Instant::now().duration_since(start);
-    let budget = 1000 - duration.as_millis();
+    let budget = Duration::from_secs(1) - duration;
     println!(
-        "Total time: {}us. Remaining time budget: {}ms. {}ms/day avg",
-        duration.as_micros(),
-        budget,
-        budget / 23
+        "Total time: {}. Remaining time budget: {}. {}/day avg remaining",
+        format_runtime_duration(&duration),
+        format_runtime_duration(&budget),
+        format_runtime_duration(&(budget / 23)),
     );
     Ok(())
 }
@@ -114,4 +113,18 @@ fn parse_args() -> color_eyre::Result<AppArgs, pico_args::Error> {
     };
 
     Ok(args)
+}
+
+fn format_runtime_elapsed(instant: &Instant) -> String {
+    format_runtime_duration(&instant.elapsed())
+}
+
+fn format_runtime_duration(d: &Duration) -> String {
+    if d.as_micros() < 1000 {
+        format!("{}us", d.as_micros())
+    } else if d.as_millis() < 1000 {
+        format!("{}ms", d.as_millis())
+    } else {
+        format!("{}s", d.as_secs())
+    }
 }
