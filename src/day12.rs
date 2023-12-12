@@ -8,6 +8,7 @@ use nom::{
     IResult,
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rustc_hash::FxHashMap;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 enum Spring {
@@ -64,13 +65,13 @@ impl<'a> From<(&'a [Spring], &'a [u8])> for CacheKey {
 }
 
 struct Cache {
-    cache: std::collections::HashMap<u16, u64>,
+    cache: FxHashMap<u16, u64>,
 }
 
 impl Cache {
     fn new() -> Self {
         Cache {
-            cache: std::collections::HashMap::new(),
+            cache: FxHashMap::default(),
         }
     }
 
