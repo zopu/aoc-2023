@@ -51,41 +51,41 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
 }
 
 #[derive(Hash, PartialEq, Eq)]
-struct CacheKey<'a> {
-    spring_key: &'a [Spring],
-    group_key: &'a [u8],
+struct CacheKey {
+    spring_len: u8,
+    group_len: u8,
 }
 
-impl<'a> From<(&'a [Spring], &'a [u8])> for CacheKey<'a> {
-    fn from((spring_key, group_key): (&'a [Spring], &'a [u8])) -> Self {
+impl<'a> From<(&'a [Spring], &'a [u8])> for CacheKey {
+    fn from((springs, groups): (&'a [Spring], &'a [u8])) -> Self {
         CacheKey {
-            spring_key,
-            group_key,
+            spring_len: springs.len() as u8,
+            group_len: groups.len() as u8,
         }
     }
 }
 
-struct Cache<'a> {
-    cache: std::collections::HashMap<CacheKey<'a>, u64>,
+struct Cache {
+    cache: std::collections::HashMap<(u8, u8), u64>,
 }
 
-impl<'a> Cache<'a> {
+impl Cache {
     fn new() -> Self {
         Cache {
             cache: std::collections::HashMap::new(),
         }
     }
 
-    fn get(&self, key: &CacheKey<'a>) -> Option<u64> {
-        self.cache.get(key).copied()
+    fn get(&self, key: &CacheKey) -> Option<u64> {
+        self.cache.get(&(key.spring_len, key.group_len)).copied()
     }
 
-    fn set(&mut self, key: CacheKey<'a>, value: u64) {
-        self.cache.insert(key, value);
+    fn set(&mut self, key: CacheKey, value: u64) {
+        self.cache.insert((key.spring_len, key.group_len), value);
     }
 }
 
-fn count_combinations<'a>(springs: &'a [Spring], groups: &'a [u8], cache: &mut Cache<'a>) -> u64 {
+fn count_combinations<'a>(springs: &'a [Spring], groups: &'a [u8], cache: &mut Cache) -> u64 {
     let key = (springs, groups).into();
     if let Some(result) = cache.get(&key) {
         return result;
