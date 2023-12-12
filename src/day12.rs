@@ -1,4 +1,3 @@
-use cached::proc_macro::cached;
 use color_eyre::Result;
 use nom::{
     branch::alt,
@@ -23,7 +22,10 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
         .map(|l| parse_line(l).unwrap())
         .map(|(_, (s, g))| (s, g))
         .collect();
-    let p1 = parsed.iter().map(|(s, g)| count_combinations(s, g)).sum();
+    let p1 = parsed
+        .iter()
+        .map(|(s, g)| count_combinations(s, g, &mut Cache::new()))
+        .sum();
 
     let p2_parsed: Vec<_> = parsed
         .iter()
@@ -43,44 +45,73 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
         .collect();
     let p2: u64 = p2_parsed
         .par_iter()
-        .map(|(s, g)| count_combinations(s, g))
+        .map(|(s, g)| count_combinations(s, g, &mut Cache::new()))
         .sum();
     Ok((p1, p2))
 }
 
 #[derive(Hash, PartialEq, Eq)]
-struct CacheKey {
-    spring_key: Vec<Spring>,
-    group_key: Vec<u8>,
+struct CacheKey<'a> {
+    spring_key: &'a [Spring],
+    group_key: &'a [u8],
 }
 
-impl From<(&[Spring], &[u8])> for CacheKey {
-    fn from((springs, groups): (&[Spring], &[u8])) -> Self {
+impl<'a> From<(&'a [Spring], &'a [u8])> for CacheKey<'a> {
+    fn from((spring_key, group_key): (&'a [Spring], &'a [u8])) -> Self {
         CacheKey {
-            spring_key: springs.to_vec(),
-            group_key: groups.to_vec(),
+            spring_key,
+            group_key,
         }
     }
 }
 
-#[cached(key = "CacheKey", convert = r#"{ CacheKey::from((springs, groups)) }"#)]
-fn count_combinations(springs: &[Spring], groups: &[u8]) -> u64 {
+struct Cache<'a> {
+    cache: std::collections::HashMap<CacheKey<'a>, u64>,
+}
+
+impl<'a> Cache<'a> {
+    fn new() -> Self {
+        Cache {
+            cache: std::collections::HashMap::new(),
+        }
+    }
+
+    fn get(&self, key: &CacheKey<'a>) -> Option<u64> {
+        self.cache.get(key).copied()
+    }
+
+    fn set(&mut self, key: CacheKey<'a>, value: u64) {
+        self.cache.insert(key, value);
+    }
+}
+
+fn count_combinations<'a>(springs: &'a [Spring], groups: &'a [u8], cache: &mut Cache<'a>) -> u64 {
+    let key = (springs, groups).into();
+    if let Some(result) = cache.get(&key) {
+        return result;
+    };
+
     // println!("Checking: {:?}, {:?}", springs, groups);
     if springs.is_empty() && groups.is_empty() {
+        cache.set(key, 1);
         return 1;
     }
     if springs.is_empty() {
+        cache.set(key, 0);
         return 0;
     }
     if groups.is_empty() {
         // Check that no remaining springs are bad
         if springs.iter().any(|s| matches!(s, Spring::Bad)) {
+            cache.set(key, 0);
             return 0;
         } else {
+            cache.set(key, 1);
             return 1;
         }
     };
     if groups[0] as usize > springs.len() {
+        cache.set(key, 0);
         return 0;
     }
 
@@ -98,22 +129,28 @@ fn count_combinations(springs: &[Spring], groups: &[u8]) -> u64 {
                 0
             }
         } else {
-            count_combinations(&springs[(groups[0] as usize + 1)..], &groups[1..])
+            {
+                count_combinations(&springs[(groups[0] as usize + 1)..], &groups[1..], cache)
+            }
         };
         let b = if springs[0] == Spring::Bad {
             0
         } else {
-            count_combinations(&springs[1..], groups)
+            count_combinations(&springs[1..], groups, cache)
         };
+        cache.set(key, a + b);
         return a + b;
     }
 
     if springs[0] == Spring::Bad {
+        cache.set(key, 0);
         return 0;
     }
 
     // Else just check the rest
-    count_combinations(&springs[1..], groups)
+    let result = count_combinations(&springs[1..], groups, cache);
+    cache.set(key, result);
+    result
 }
 
 // Parse lines like: #.#.### 1,1,3
@@ -149,51 +186,51 @@ mod tests {
     fn test_weird_case() {
         let springs = vec![Spring::Bad];
         let groups = vec![1, 3];
-        assert_eq!(0, count_combinations(&springs, &groups));
+        assert_eq!(0, count_combinations(&springs, &groups, &mut Cache::new()));
     }
 
     #[test]
     fn last_sample_case() {
         let line = "?###???????? 3,2,1";
         let (_remaining, (springs, groups)) = parse_line(line).unwrap();
-        assert_eq!(10, count_combinations(&springs, &groups));
+        assert_eq!(10, count_combinations(&springs, &groups, &mut Cache::new()));
     }
 
     #[test]
     fn empty_springs() {
         let springs = vec![];
         let groups = vec![];
-        assert_eq!(1, count_combinations(&springs, &groups));
+        assert_eq!(1, count_combinations(&springs, &groups, &mut Cache::new()));
     }
 
     #[test]
     fn empty_groups() {
         let springs = vec![Spring::Bad];
         let groups = vec![];
-        assert_eq!(0, count_combinations(&springs, &groups));
+        assert_eq!(0, count_combinations(&springs, &groups, &mut Cache::new()));
         let springs = vec![Spring::Good];
         let groups = vec![];
-        assert_eq!(1, count_combinations(&springs, &groups));
+        assert_eq!(1, count_combinations(&springs, &groups, &mut Cache::new()));
     }
 
     #[test]
     fn extra_bad() {
         let springs = vec![Spring::Bad, Spring::Bad];
         let groups = vec![1];
-        assert_eq!(0, count_combinations(&springs, &groups));
+        assert_eq!(0, count_combinations(&springs, &groups, &mut Cache::new()));
     }
 
     #[test]
     fn long_case() {
         let line = ".???.???...?????? 1,1,5";
         let (_remaining, (springs, groups)) = parse_line(line).unwrap();
-        assert_eq!(22, count_combinations(&springs, &groups));
+        assert_eq!(22, count_combinations(&springs, &groups, &mut Cache::new()));
     }
 
     #[test]
     fn very_high_case() {
         let line = "??????.???. 1,1,1";
         let (_remaining, (springs, groups)) = parse_line(line).unwrap();
-        assert_eq!(40, count_combinations(&springs, &groups));
+        assert_eq!(40, count_combinations(&springs, &groups, &mut Cache::new()));
     }
 }
