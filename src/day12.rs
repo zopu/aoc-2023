@@ -48,10 +48,20 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     Ok((p1, p2))
 }
 
-#[cached(
-    key = "String",
-    convert = r#"{ format!("{:?}{:?}", springs, groups) }"#
-)]
+fn cache_key(springs: &[Spring], groups: &[u8]) -> String {
+    let spring_key = springs
+        .iter()
+        .map(|s| match s {
+            Spring::Good => "G",
+            Spring::Bad => "B",
+            Spring::Unknown => "U",
+        })
+        .collect::<String>();
+    spring_key + format!("{:?}", groups).as_str()
+    // format!("{:?}{:?}", spring_key, groups)
+}
+
+#[cached(key = "String", convert = r#"{ cache_key(springs, groups) }"#)]
 fn count_combinations(springs: &[Spring], groups: &[u8]) -> u64 {
     // println!("Checking: {:?}, {:?}", springs, groups);
     if springs.is_empty() && groups.is_empty() {
