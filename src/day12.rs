@@ -1,4 +1,5 @@
-use color_eyre::{eyre::anyhow, Result};
+use cached::proc_macro::cached;
+use color_eyre::Result;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -7,8 +8,9 @@ use nom::{
     sequence::separated_pair,
     IResult,
 };
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 enum Spring {
     Good,
     Bad,
@@ -16,19 +18,40 @@ enum Spring {
 }
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
-    let sum = input
+    let parsed: Vec<(_, _)> = input
         .lines()
-        .map(|l| {
-            // println!("Line: {}", l);
-            let (_remaining, (springs, groups)) = parse_line(l)
-                .map_err(|e| anyhow!("Parse error: {}", e))
-                .unwrap();
-            count_combinations(&springs, &groups)
+        .map(|l| parse_line(l).unwrap())
+        .map(|(_, (s, g))| (s, g))
+        .collect();
+    let p1 = parsed.iter().map(|(s, g)| count_combinations(s, g)).sum();
+
+    let p2_parsed: Vec<_> = parsed
+        .iter()
+        .map(|(s, g)| {
+            let mut s5 = s.clone();
+            s5.push(Spring::Unknown);
+            s5.extend(s.iter());
+            s5.push(Spring::Unknown);
+            s5.extend(s.iter());
+            s5.push(Spring::Unknown);
+            s5.extend(s.iter());
+            s5.push(Spring::Unknown);
+            s5.extend(s.iter());
+            let g5 = g.repeat(5);
+            (s5, g5)
         })
+        .collect();
+    let p2: u64 = p2_parsed
+        .par_iter()
+        .map(|(s, g)| count_combinations(s, g))
         .sum();
-    Ok((sum, 0))
+    Ok((p1, p2))
 }
 
+#[cached(
+    key = "String",
+    convert = r#"{ format!("{:?}{:?}", springs, groups) }"#
+)]
 fn count_combinations(springs: &[Spring], groups: &[u8]) -> u64 {
     // println!("Checking: {:?}, {:?}", springs, groups);
     if springs.is_empty() && groups.is_empty() {
@@ -56,7 +79,6 @@ fn count_combinations(springs: &[Spring], groups: &[u8]) -> u64 {
     let trailing_not_bad =
         (groups[0] as usize == springs.len()) || springs[groups[0] as usize] != Spring::Bad;
     if first_group_matches && trailing_not_bad {
-        // println!("First group matches: {:?}, {:?}", springs, groups);
         let a = if groups[0] as usize == springs.len() {
             if groups.len() == 1 {
                 1
@@ -71,10 +93,6 @@ fn count_combinations(springs: &[Spring], groups: &[u8]) -> u64 {
         } else {
             count_combinations(&springs[1..], groups)
         };
-        // println!(
-        //     "Found {}, {} combinations from {:?}, {:?}",
-        //     a, b, springs, groups
-        // );
         return a + b;
     }
 
@@ -111,7 +129,9 @@ mod tests {
     use crate::runner::test::{input_test, sample_test};
 
     sample_test!(sample_part1, 12, Some(21), None);
+    sample_test!(sample_part2, 12, None, Some(525152));
     input_test!(part1, 12, Some(6852), None);
+    input_test!(part2, 12, None, Some(8475948826693));
 
     #[test]
     fn test_weird_case() {
