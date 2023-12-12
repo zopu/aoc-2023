@@ -25,7 +25,7 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
         .collect();
     let p1 = parsed
         .iter()
-        .map(|(s, g)| count_combinations(s, g, &mut Cache::new()))
+        .map(|(s, g)| count_combinations_cached(s, g, &mut Cache::new()))
         .sum();
 
     let p2_parsed: Vec<_> = parsed
@@ -47,7 +47,7 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
 
     let p2: u64 = p2_parsed
         .par_iter()
-        .map(|(s, g)| count_combinations(s, g, &mut Cache::new()))
+        .map(|(s, g)| count_combinations_cached(s, g, &mut Cache::new()))
         .sum();
 
     Ok((p1, p2))
@@ -86,33 +86,38 @@ impl Cache {
     }
 }
 
-fn count_combinations<'a>(springs: &'a [Spring], groups: &'a [u8], cache: &mut Cache) -> u64 {
+fn count_combinations_cached<'a>(
+    springs: &'a [Spring],
+    groups: &'a [u8],
+    cache: &mut Cache,
+) -> u64 {
     let key = (springs, groups).into();
     if let Some(result) = cache.get(&key) {
         return result;
     };
 
+    let result = count_combinations(springs, groups, cache);
+    cache.set(key, result);
+    result
+}
+
+fn count_combinations<'a>(springs: &'a [Spring], groups: &'a [u8], cache: &mut Cache) -> u64 {
     // println!("Checking: {:?}, {:?}", springs, groups);
     if springs.is_empty() && groups.is_empty() {
-        cache.set(key, 1);
         return 1;
     }
     if springs.is_empty() {
-        cache.set(key, 0);
         return 0;
     }
     if groups.is_empty() {
         // Check that no remaining springs are bad
         if springs.iter().any(|s| matches!(s, Spring::Bad)) {
-            cache.set(key, 0);
             return 0;
         } else {
-            cache.set(key, 1);
             return 1;
         }
     };
     if groups[0] as usize > springs.len() {
-        cache.set(key, 0);
         return 0;
     }
 
@@ -131,27 +136,23 @@ fn count_combinations<'a>(springs: &'a [Spring], groups: &'a [u8], cache: &mut C
             }
         } else {
             {
-                count_combinations(&springs[(groups[0] as usize + 1)..], &groups[1..], cache)
+                count_combinations_cached(&springs[(groups[0] as usize + 1)..], &groups[1..], cache)
             }
         };
         let b = if springs[0] == Spring::Bad {
             0
         } else {
-            count_combinations(&springs[1..], groups, cache)
+            count_combinations_cached(&springs[1..], groups, cache)
         };
-        cache.set(key, a + b);
         return a + b;
     }
 
     if springs[0] == Spring::Bad {
-        cache.set(key, 0);
         return 0;
     }
 
     // Else just check the rest
-    let result = count_combinations(&springs[1..], groups, cache);
-    cache.set(key, result);
-    result
+    count_combinations_cached(&springs[1..], groups, cache)
 }
 
 // Parse lines like: #.#.### 1,1,3
