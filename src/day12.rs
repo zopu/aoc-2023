@@ -103,25 +103,17 @@ fn count_combinations_cached<'a>(
 
 fn count_combinations<'a>(springs: &'a [Spring], groups: &'a [u8], cache: &mut Cache) -> u64 {
     // println!("Checking: {:?}, {:?}", springs, groups);
-    if springs.is_empty() && groups.is_empty() {
-        return 1;
+    match (springs.is_empty(), groups.is_empty()) {
+        (true, true) => return 1,
+        (true, _) => return 0,
+        (_, true) => return !springs.iter().any(|s| matches!(s, Spring::Bad)) as u64,
+        _ => {}
     }
-    if springs.is_empty() {
-        return 0;
-    }
-    if groups.is_empty() {
-        // Check that no remaining springs are bad
-        if springs.iter().any(|s| matches!(s, Spring::Bad)) {
-            return 0;
-        } else {
-            return 1;
-        }
-    };
+
     if groups[0] as usize > springs.len() {
         return 0;
     }
 
-    // If the first group matches, then consume and check the rest
     let first_group_matches = springs[0..(groups[0] as usize)]
         .iter()
         .all(|s| *s != Spring::Good);
@@ -129,11 +121,7 @@ fn count_combinations<'a>(springs: &'a [Spring], groups: &'a [u8], cache: &mut C
         (groups[0] as usize == springs.len()) || springs[groups[0] as usize] != Spring::Bad;
     if first_group_matches && trailing_not_bad {
         let a = if groups[0] as usize == springs.len() {
-            if groups.len() == 1 {
-                1
-            } else {
-                0
-            }
+            (groups.len() == 1) as u64
         } else {
             {
                 count_combinations_cached(&springs[(groups[0] as usize + 1)..], &groups[1..], cache)
