@@ -48,20 +48,22 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     Ok((p1, p2))
 }
 
-fn cache_key(springs: &[Spring], groups: &[u8]) -> String {
-    let spring_key = springs
-        .iter()
-        .map(|s| match s {
-            Spring::Good => "G",
-            Spring::Bad => "B",
-            Spring::Unknown => "U",
-        })
-        .collect::<String>();
-    spring_key + format!("{:?}", groups).as_str()
-    // format!("{:?}{:?}", spring_key, groups)
+#[derive(Hash, PartialEq, Eq)]
+struct CacheKey {
+    spring_key: Vec<Spring>,
+    group_key: Vec<u8>,
 }
 
-#[cached(key = "String", convert = r#"{ cache_key(springs, groups) }"#)]
+impl From<(&[Spring], &[u8])> for CacheKey {
+    fn from((springs, groups): (&[Spring], &[u8])) -> Self {
+        CacheKey {
+            spring_key: springs.to_vec(),
+            group_key: groups.to_vec(),
+        }
+    }
+}
+
+#[cached(key = "CacheKey", convert = r#"{ CacheKey::from((springs, groups)) }"#)]
 fn count_combinations(springs: &[Spring], groups: &[u8]) -> u64 {
     // println!("Checking: {:?}, {:?}", springs, groups);
     if springs.is_empty() && groups.is_empty() {
