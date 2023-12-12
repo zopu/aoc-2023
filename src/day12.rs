@@ -52,21 +52,19 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
 
 #[derive(Hash, PartialEq, Eq)]
 struct CacheKey {
-    spring_len: u8,
-    group_len: u8,
+    key: u16,
 }
 
 impl<'a> From<(&'a [Spring], &'a [u8])> for CacheKey {
     fn from((springs, groups): (&'a [Spring], &'a [u8])) -> Self {
         CacheKey {
-            spring_len: springs.len() as u8,
-            group_len: groups.len() as u8,
+            key: u16::from_be_bytes([springs.len() as u8, groups.len() as u8]),
         }
     }
 }
 
 struct Cache {
-    cache: std::collections::HashMap<(u8, u8), u64>,
+    cache: std::collections::HashMap<u16, u64>,
 }
 
 impl Cache {
@@ -77,11 +75,11 @@ impl Cache {
     }
 
     fn get(&self, key: &CacheKey) -> Option<u64> {
-        self.cache.get(&(key.spring_len, key.group_len)).copied()
+        self.cache.get(&(key.key)).copied()
     }
 
     fn set(&mut self, key: CacheKey, value: u64) {
-        self.cache.insert((key.spring_len, key.group_len), value);
+        self.cache.insert(key.key, value);
     }
 }
 
