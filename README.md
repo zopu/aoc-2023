@@ -21,7 +21,6 @@ Day 11: 107us
 Day 12: 2159us
 Day 13: 230us
 Total time: 4909us. Remaining time budget: 995ms. 43ms/day avg remaining
-mikeperrow@Mikes-MacBook-Pro aoc-2023 % cargo clippy
 
 % cargo build --release && hyperfine -N --warmup 10 './target/release/aoc-2023'
     Finished release [optimized] target(s) in 0.05s
