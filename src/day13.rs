@@ -34,7 +34,15 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
             col_symmetry + 100 * row_symmetry
         })
         .sum();
-    Ok((p1, 0))
+    let p2: u64 = grids
+        .iter()
+        .map(|g| {
+            let row_symmetry = find_one_off_symmetry(&g.rows);
+            let col_symmetry = find_one_off_symmetry(&g.cols);
+            col_symmetry + 100 * row_symmetry
+        })
+        .sum();
+    Ok((p1, p2))
 }
 
 fn find_symmetry(nums: &[u64]) -> u64 {
@@ -49,6 +57,29 @@ fn find_symmetry(nums: &[u64]) -> u64 {
             }
         }
         return i as u64;
+    }
+    0
+}
+
+fn find_one_off_symmetry(nums: &[u64]) -> u64 {
+    'outer: for i in 1..nums.len() {
+        let mut bit_diff = 0;
+        for j in 1..=i {
+            if i + j > nums.len() {
+                if bit_diff == 1 {
+                    return i as u64;
+                } else {
+                    continue 'outer;
+                }
+            }
+            bit_diff += (nums[i + j - 1] ^ nums[i - j]).count_ones();
+            if bit_diff > 1 {
+                continue 'outer;
+            }
+        }
+        if bit_diff == 1 {
+            return i as u64;
+        }
     }
     0
 }
@@ -75,5 +106,6 @@ mod tests {
     use crate::runner::test::{input_test, sample_test};
 
     sample_test!(sample_part1, 13, Some(405), None);
+    sample_test!(sample_part2, 13, None, Some(400));
     input_test!(part1, 13, Some(37718), None);
 }
