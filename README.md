@@ -4,25 +4,28 @@ Attempting to optimize performance towards all days running in sequence in under
 
 ---
 
-## Status as of day 11:
+## Status as of day 13:
 
 ```
-392us day 1 runtime
-145us day 2 runtime
-274us day 3 runtime
-255us day 4 runtime
-119us day 5 runtime
-12us day 6 runtime
-342us day 7 runtime
-378us day 8 runtime
-103us day 9 runtime
-182us day 10 runtime
-217us day 11 runtime
-Total time: 2471us. Remaining time budget: 998ms. 43ms/day avg
+Day 1:  548us
+Day 2:  139us
+Day 3:  291us
+Day 4:  244us
+Day 5:  115us
+Day 6:  11us
+Day 7:  327us
+Day 8:  385us
+Day 9:  108us
+Day 10: 167us
+Day 11: 107us
+Day 12: 2159us
+Day 13: 230us
+Total time: 4909us. Remaining time budget: 995ms. 43ms/day avg remaining
+mikeperrow@Mikes-MacBook-Pro aoc-2023 % cargo clippy
 
 % cargo build --release && hyperfine -N --warmup 10 './target/release/aoc-2023'
-    Finished release [optimized] target(s) in 0.02s
+    Finished release [optimized] target(s) in 0.05s
 Benchmark 1: ./target/release/aoc-2023
-  Time (mean ± σ):       3.4 ms ±   0.2 ms    [User: 5.0 ms, System: 5.7 ms]
-  Range (min … max):     3.1 ms …   4.3 ms    885 runs
+  Time (mean ± σ):       5.6 ms ±   0.2 ms    [User: 11.1 ms, System: 8.9 ms]
+  Range (min … max):     5.2 ms …   6.7 ms    507 runs
 ```
