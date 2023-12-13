@@ -1,4 +1,5 @@
 use color_eyre::Result;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 
 #[derive(Debug)]
 struct Grid {
@@ -25,23 +26,21 @@ impl From<&str> for Grid {
 }
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
-    let grids = parse(input)?;
-    let p1: u64 = grids
-        .iter()
+    let (p1, p2): (u64, u64) = input
+        .split("\n\n")
+        .par_bridge()
+        .map(Grid::from)
         .map(|g| {
             let row_symmetry = find_symmetry(&g.rows);
             let col_symmetry = find_symmetry(&g.cols);
-            col_symmetry + 100 * row_symmetry
+            let oo_row_symmetry = find_one_off_symmetry(&g.rows);
+            let oo_col_symmetry = find_one_off_symmetry(&g.cols);
+            (
+                col_symmetry + 100 * row_symmetry,
+                oo_col_symmetry + 100 * oo_row_symmetry,
+            )
         })
-        .sum();
-    let p2: u64 = grids
-        .iter()
-        .map(|g| {
-            let row_symmetry = find_one_off_symmetry(&g.rows);
-            let col_symmetry = find_one_off_symmetry(&g.cols);
-            col_symmetry + 100 * row_symmetry
-        })
-        .sum();
+        .reduce(|| (0, 0), |(a1, a2), (b1, b2)| (a1 + b1, a2 + b2));
     Ok((p1, p2))
 }
 
@@ -82,22 +81,6 @@ fn find_one_off_symmetry(nums: &[u64]) -> u64 {
         }
     }
     0
-}
-
-fn parse(input: &str) -> Result<Vec<Grid>> {
-    let mut grids: Vec<String> = vec![];
-    grids.push(String::from(""));
-    input.lines().for_each(|l| {
-        if l.is_empty() {
-            grids.push(String::from(""));
-        } else {
-            let grid = grids.last_mut().unwrap();
-            grid.push_str(l);
-            grid.push('\n');
-        }
-    });
-
-    Ok(grids.iter().map(|s| Grid::from(s.as_str())).collect())
 }
 
 #[cfg(test)]
