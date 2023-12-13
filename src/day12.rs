@@ -114,6 +114,10 @@ fn count_combinations<'a>(springs: &'a [Spring], groups: &'a [u8], cache: &mut C
         return 0;
     }
 
+    if groups.iter().sum::<u8>() + groups.len() as u8 - 1 > springs.len() as u8 {
+        return 0;
+    }
+
     let first_group_matches = springs[0..(groups[0] as usize)]
         .iter()
         .all(|s| *s != Spring::Good);
