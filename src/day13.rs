@@ -34,6 +34,15 @@ impl From<&str> for Grid {
     }
 }
 
+impl Grid {
+    fn rows(&self) -> &[u32] {
+        self.rows[0..self.dimensions.0].as_ref()
+    }
+    fn cols(&self) -> &[u32] {
+        self.cols[0..self.dimensions.1].as_ref()
+    }
+}
+
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let (p1, p2): (u32, u32) = input
         .split("\n\n")
@@ -41,10 +50,10 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
         .map(Grid::from)
         .map(|g| {
             // println!("{:?}", g);
-            let row_symmetry = find_symmetry(&g.rows[0..g.dimensions.0]);
-            let col_symmetry = find_symmetry(&g.cols[0..g.dimensions.1]);
-            let oo_row_symmetry = find_one_off_symmetry(&g.rows[0..g.dimensions.0]);
-            let oo_col_symmetry = find_one_off_symmetry(&g.cols[0..g.dimensions.1]);
+            let row_symmetry = find_symmetry(g.rows());
+            let col_symmetry = find_symmetry(g.cols());
+            let oo_row_symmetry = find_one_off_symmetry(g.rows());
+            let oo_col_symmetry = find_one_off_symmetry(g.cols());
             (
                 col_symmetry + 100 * row_symmetry,
                 oo_col_symmetry + 100 * oo_row_symmetry,
