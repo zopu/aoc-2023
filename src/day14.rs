@@ -44,6 +44,70 @@ impl Platform {
         }
         sum
     }
+
+    // We're assuming the platform is a square
+    fn rotate_tilt(self) -> Platform {
+        let mut new_cols = vec![
+            vec![Stack {
+                start: 0,
+                round_rocks: 0,
+            }];
+            self.side_len
+        ];
+        for (i, col) in self.cols.iter().enumerate() {
+            for stack in col.iter() {
+                if stack.start > 0 {
+                    new_cols[self.side_len - stack.start as usize].push(Stack {
+                        start: i as u8 + 1,
+                        round_rocks: 0,
+                    });
+                }
+                for j in 0..stack.round_rocks {
+                    new_cols[self.side_len - stack.start as usize - 1 - j as usize]
+                        .last_mut()
+                        .unwrap()
+                        .round_rocks += 1;
+                }
+            }
+        }
+
+        Platform {
+            side_len: self.side_len,
+            cols: new_cols,
+        }
+    }
+}
+
+impl From<&str> for Platform {
+    fn from(input: &str) -> Self {
+        let cols = input.lines().next().unwrap().len();
+        let mut stacks: Vec<Vec<Stack>> = vec![
+            vec![Stack {
+                start: 0,
+                round_rocks: 0,
+            }];
+            cols
+        ];
+        let mut rows = 0;
+        for (i, l) in input.lines().enumerate() {
+            for (j, c) in l.chars().enumerate() {
+                if c == '#' {
+                    stacks[j].push(Stack {
+                        start: i as u8 + 1,
+                        round_rocks: 0,
+                    });
+                }
+                if c == 'O' {
+                    stacks[j].last_mut().unwrap().round_rocks += 1;
+                }
+            }
+            rows += 1;
+        }
+        Platform {
+            side_len: rows,
+            cols: stacks,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -62,70 +126,8 @@ impl Stack {
     }
 }
 
-fn build_stacks(input: &str) -> Platform {
-    let cols = input.lines().next().unwrap().len();
-    let mut stacks: Vec<Vec<Stack>> = vec![
-        vec![Stack {
-            start: 0,
-            round_rocks: 0,
-        }];
-        cols
-    ];
-    let mut rows = 0;
-    for (i, l) in input.lines().enumerate() {
-        for (j, c) in l.chars().enumerate() {
-            if c == '#' {
-                stacks[j].push(Stack {
-                    start: i as u8 + 1,
-                    round_rocks: 0,
-                });
-            }
-            if c == 'O' {
-                stacks[j].last_mut().unwrap().round_rocks += 1;
-            }
-        }
-        rows += 1;
-    }
-    Platform {
-        side_len: rows,
-        cols: stacks,
-    }
-}
-
-// We're assuming the platform is a square
-fn rotate_tilt(platform: Platform) -> Platform {
-    let mut new_cols = vec![
-        vec![Stack {
-            start: 0,
-            round_rocks: 0,
-        }];
-        platform.side_len
-    ];
-    for (i, col) in platform.cols.iter().enumerate() {
-        for stack in col.iter() {
-            if stack.start > 0 {
-                new_cols[platform.side_len - stack.start as usize].push(Stack {
-                    start: i as u8 + 1,
-                    round_rocks: 0,
-                });
-            }
-            for j in 0..stack.round_rocks {
-                new_cols[platform.side_len - stack.start as usize - 1 - j as usize]
-                    .last_mut()
-                    .unwrap()
-                    .round_rocks += 1;
-            }
-        }
-    }
-
-    Platform {
-        side_len: platform.side_len,
-        cols: new_cols,
-    }
-}
-
 pub fn run(input: &str) -> Result<(u64, u64)> {
-    let platform = build_stacks(input);
+    let platform = Platform::from(input);
     let p1 = platform
         .cols
         .iter()
@@ -137,9 +139,9 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
         .sum::<u64>();
 
     // Finish the first cycle
-    let first_platform = rotate_tilt(rotate_tilt(rotate_tilt(platform)));
+    let first_platform = platform.rotate_tilt().rotate_tilt().rotate_tilt();
 
-    let one_cyle = |p| rotate_tilt(rotate_tilt(rotate_tilt(rotate_tilt(p))));
+    let one_cyle = |p: Platform| p.rotate_tilt().rotate_tilt().rotate_tilt().rotate_tilt();
 
     let (cycle_size, _p, i) = brent(first_platform.clone(), one_cyle);
     let equivalent = (1_000_000_000 - i - 1) % cycle_size;
