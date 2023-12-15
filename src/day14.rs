@@ -3,28 +3,27 @@ use std::fmt::Debug;
 use color_eyre::Result;
 use pathfinding::directed::cycle_detection::brent;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum Tilt {
+    East,
+    West,
+    North,
+    South,
+}
+
 #[derive(Clone, PartialEq, Eq)]
 struct Platform {
+    tilt: Option<Tilt>,
     side_len: usize,
-    cols: Vec<Vec<Stack>>,
+    grid: Vec<char>,
 }
 
 impl Debug for Platform {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut grid = vec![vec!['.'; self.side_len]; self.side_len];
-        for (i, col) in self.cols.iter().enumerate() {
-            for stack in col.iter() {
-                if stack.start > 0 {
-                    grid[stack.start as usize - 1][i] = '#';
-                }
-                for j in 0..stack.round_rocks {
-                    grid[stack.start as usize + j as usize][i] = 'O';
-                }
-            }
-        }
-        for row in grid.iter() {
-            for c in row.iter() {
-                write!(f, "{}", c)?;
+        let mut it = self.grid.iter();
+        for _ in 0..self.side_len {
+            for _ in 0..self.side_len {
+                write!(f, "{}", it.next().unwrap())?;
             }
             writeln!(f)?;
         }
@@ -33,110 +32,96 @@ impl Debug for Platform {
 }
 
 impl Platform {
-    fn load_when_tilted_east(&self) -> u64 {
-        let mut sum = 0;
-        for (i, col) in self.cols.iter().enumerate() {
-            let mut row_sum = 0;
-            for stack in col.iter() {
-                row_sum += stack.round_rocks as u64 * (self.side_len as u64 - i as u64);
+    #[inline]
+    fn grid_at(&self, row: usize, col: usize) -> &char {
+        &self.grid[row * self.side_len + col]
+    }
+
+    #[inline]
+    fn grid_at_tilted(&self, row: usize, col: usize, tilt: &Tilt) -> &char {
+        match tilt {
+            Tilt::West => &self.grid[(self.side_len - col - 1) * self.side_len + row],
+            Tilt::South => {
+                &self.grid[(self.side_len - row - 1) * self.side_len + (self.side_len - col - 1)]
             }
-            sum += row_sum;
+            Tilt::East => &self.grid[col * self.side_len + (self.side_len - row - 1)],
+            _ => &self.grid[row * self.side_len + col],
+        }
+    }
+
+    #[inline]
+    fn grid_at_tilted_mut(&mut self, row: usize, col: usize, tilt: &Tilt) -> &mut char {
+        match tilt {
+            Tilt::West => &mut self.grid[(self.side_len - col - 1) * self.side_len + row],
+            Tilt::South => {
+                &mut self.grid
+                    [(self.side_len - row - 1) * self.side_len + (self.side_len - col - 1)]
+            }
+            Tilt::East => &mut self.grid[col * self.side_len + (self.side_len - row - 1)],
+            _ => &mut self.grid[row * self.side_len + col],
+        }
+    }
+
+    fn rotate_tilt(mut self) -> Platform {
+        match self.tilt {
+            None => self.tilt(Tilt::North),
+            Some(Tilt::North) => self.tilt(Tilt::West),
+            Some(Tilt::West) => self.tilt(Tilt::South),
+            Some(Tilt::South) => self.tilt(Tilt::East),
+            Some(Tilt::East) => self.tilt(Tilt::North),
+        }
+        self
+    }
+
+    fn north_load(&self) -> u64 {
+        let mut sum = 0;
+        for i in 0..self.side_len {
+            for j in 0..self.side_len {
+                if *self.grid_at(i, j) == 'O' {
+                    sum += (self.side_len - i) as u64;
+                }
+            }
         }
         sum
     }
 
-    // We're assuming the platform is a square
-    fn rotate_tilt(self) -> Platform {
-        let mut new_cols = vec![
-            vec![Stack {
-                start: 0,
-                round_rocks: 0,
-            }];
-            self.side_len
-        ];
-        for (i, col) in self.cols.iter().enumerate() {
-            for stack in col.iter() {
-                if stack.start > 0 {
-                    new_cols[self.side_len - stack.start as usize].push(Stack {
-                        start: i as u8 + 1,
-                        round_rocks: 0,
-                    });
-                }
-                for j in 0..stack.round_rocks {
-                    new_cols[self.side_len - stack.start as usize - 1 - j as usize]
-                        .last_mut()
-                        .unwrap()
-                        .round_rocks += 1;
+    fn tilt(&mut self, tilt: Tilt) {
+        self.tilt = Some(tilt);
+        for col in 0..self.side_len {
+            let mut place_row = 0;
+            for row in 0..self.side_len {
+                match self.grid_at_tilted(row, col, &tilt) {
+                    '#' => {
+                        place_row = row + 1;
+                    }
+                    'O' => {
+                        *self.grid_at_tilted_mut(row, col, &tilt) = '.';
+                        *self.grid_at_tilted_mut(place_row, col, &tilt) = 'O';
+                        place_row += 1;
+                    }
+                    _ => {}
                 }
             }
-        }
-
-        Platform {
-            side_len: self.side_len,
-            cols: new_cols,
         }
     }
 }
 
 impl From<&str> for Platform {
     fn from(input: &str) -> Self {
-        let cols = input.lines().next().unwrap().len();
-        let mut stacks: Vec<Vec<Stack>> = vec![
-            vec![Stack {
-                start: 0,
-                round_rocks: 0,
-            }];
-            cols
-        ];
-        let mut rows = 0;
-        for (i, l) in input.lines().enumerate() {
-            for (j, c) in l.chars().enumerate() {
-                if c == '#' {
-                    stacks[j].push(Stack {
-                        start: i as u8 + 1,
-                        round_rocks: 0,
-                    });
-                }
-                if c == 'O' {
-                    stacks[j].last_mut().unwrap().round_rocks += 1;
-                }
-            }
-            rows += 1;
-        }
+        let side_len = input.lines().next().unwrap().len();
+        let grid = input.chars().filter(|c| *c != '\n').collect();
         Platform {
-            side_len: rows,
-            cols: stacks,
+            tilt: None,
+            side_len,
+            grid,
         }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct Stack {
-    start: u8,
-    round_rocks: u8,
-}
-
-impl Stack {
-    fn load(&self, rows: u32) -> u32 {
-        let n = self.round_rocks as u32;
-        if n == 0 {
-            return 0;
-        }
-        rows * n - n * self.start as u32 - n * (n - 1) / 2
     }
 }
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let platform = Platform::from(input);
-    let p1 = platform
-        .cols
-        .iter()
-        .map(|s| {
-            s.iter()
-                .map(|stack| stack.load(platform.side_len as u32))
-                .sum::<u32>() as u64
-        })
-        .sum::<u64>();
+    let platform = platform.rotate_tilt();
+    let p1 = platform.north_load();
 
     // Finish the first cycle
     let first_platform = platform.rotate_tilt().rotate_tilt().rotate_tilt();
@@ -149,7 +134,7 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     for _ in 0..(equivalent + i) {
         platform = one_cyle(platform);
     }
-    let p2 = platform.load_when_tilted_east();
+    let p2 = platform.north_load();
     Ok((p1, p2))
 }
 
