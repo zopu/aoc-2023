@@ -37,6 +37,12 @@ impl Platform {
         &self.grid[row * self.side_len + col]
     }
 
+    #[allow(unused)]
+    #[inline]
+    fn grid_at_mut(&mut self, row: usize, col: usize) -> &mut char {
+        &mut self.grid[row * self.side_len + col]
+    }
+
     #[inline]
     fn grid_at_tilted(&self, row: usize, col: usize, tilt: &Tilt) -> &char {
         match tilt {
@@ -64,11 +70,11 @@ impl Platform {
 
     fn rotate_tilt(mut self) -> Platform {
         match self.tilt {
-            None => self.tilt(Tilt::North),
-            Some(Tilt::North) => self.tilt(Tilt::West),
-            Some(Tilt::West) => self.tilt(Tilt::South),
-            Some(Tilt::South) => self.tilt(Tilt::East),
-            Some(Tilt::East) => self.tilt(Tilt::North),
+            None => self.tilt_north(),
+            Some(Tilt::North) => self.tilt_west(),
+            Some(Tilt::West) => self.tilt_south(),
+            Some(Tilt::South) => self.tilt_east(),
+            Some(Tilt::East) => self.tilt_north(),
         }
         self
     }
@@ -83,6 +89,90 @@ impl Platform {
             }
         }
         sum
+    }
+
+    fn tilt_north(&mut self) {
+        self.tilt = Some(Tilt::North);
+        for col in 0..self.side_len {
+            let mut place_row = 0;
+            for row in 0..self.side_len {
+                match self.grid[row * self.side_len + col] {
+                    '#' => {
+                        place_row = row + 1;
+                    }
+                    'O' => {
+                        self.grid[row * self.side_len + col] = '.';
+                        self.grid[place_row * self.side_len + col] = 'O';
+                        place_row += 1;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    fn tilt_west(&mut self) {
+        self.tilt = Some(Tilt::West);
+        for col in 0..self.side_len {
+            let mut place_row = 0;
+            for row in 0..self.side_len {
+                match self.grid[(self.side_len - col - 1) * self.side_len + row] {
+                    '#' => {
+                        place_row = row + 1;
+                    }
+                    'O' => {
+                        self.grid[(self.side_len - col - 1) * self.side_len + row] = '.';
+                        self.grid[(self.side_len - col - 1) * self.side_len + place_row] = 'O';
+                        place_row += 1;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    fn tilt_south(&mut self) {
+        self.tilt = Some(Tilt::South);
+        for col in 0..self.side_len {
+            let mut place_row = 0;
+            for row in 0..self.side_len {
+                match self.grid
+                    [(self.side_len - row - 1) * self.side_len + (self.side_len - col - 1)]
+                {
+                    '#' => {
+                        place_row = row + 1;
+                    }
+                    'O' => {
+                        self.grid[(self.side_len - row - 1) * self.side_len
+                            + (self.side_len - col - 1)] = '.';
+                        self.grid[(self.side_len - place_row - 1) * self.side_len
+                            + (self.side_len - col - 1)] = 'O';
+                        place_row += 1;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    fn tilt_east(&mut self) {
+        self.tilt = Some(Tilt::East);
+        for col in 0..self.side_len {
+            let mut place_row = 0;
+            for row in 0..self.side_len {
+                match self.grid[col * self.side_len + (self.side_len - row - 1)] {
+                    '#' => {
+                        place_row = row + 1;
+                    }
+                    'O' => {
+                        self.grid[col * self.side_len + (self.side_len - row - 1)] = '.';
+                        self.grid[col * self.side_len + (self.side_len - place_row - 1)] = 'O';
+                        place_row += 1;
+                    }
+                    _ => {}
+                }
+            }
+        }
     }
 
     fn tilt(&mut self, tilt: Tilt) {
