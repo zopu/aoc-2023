@@ -11,11 +11,22 @@ enum Tilt {
     South,
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 struct Platform {
     tilt: Option<Tilt>,
     side_len: usize,
     grid: Vec<char>,
+}
+
+impl Clone for Platform {
+    // I don't know why, but handrolling this is slightly (but statsig) faster than deriving Clone for Platform.
+    fn clone(&self) -> Self {
+        Self {
+            tilt: self.tilt.clone(),
+            side_len: self.side_len.clone(),
+            grid: self.grid.clone(),
+        }
+    }
 }
 
 impl Debug for Platform {
@@ -77,6 +88,10 @@ impl Platform {
             Some(Tilt::East) => self.tilt_north(),
         }
         self
+    }
+
+    fn cycle(self) -> Platform {
+        self.rotate_tilt().rotate_tilt().rotate_tilt().rotate_tilt()
     }
 
     fn north_load(&self) -> u64 {
@@ -216,15 +231,12 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     // Finish the first cycle
     let first_platform = platform.rotate_tilt().rotate_tilt().rotate_tilt();
 
-    let one_cyle = |p: Platform| p.rotate_tilt().rotate_tilt().rotate_tilt().rotate_tilt();
-
-    let (cycle_size, _p, i) = brent(first_platform.clone(), one_cyle);
+    let (cycle_size, mut p, i) = brent(first_platform.clone(), |p| p.cycle());
     let equivalent = (1_000_000_000 - i - 1) % cycle_size;
-    let mut platform = first_platform;
-    for _ in 0..(equivalent + i) {
-        platform = one_cyle(platform);
+    for _ in 0..(equivalent) {
+        p = p.cycle();
     }
-    let p2 = platform.north_load();
+    let p2 = p.north_load();
     Ok((p1, p2))
 }
 
