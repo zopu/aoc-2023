@@ -18,6 +18,7 @@ mod day6;
 mod day7;
 mod day8;
 mod day9;
+mod grid;
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use runner::normal_day;
@@ -45,7 +46,7 @@ const DAYS: [fn() -> color_eyre::Result<()>; 16] = [
     || normal_day(day13::run, 13, 37718, 40995),
     || normal_day(day14::run, 14, 102497, 105008),
     || normal_day(day15::run, 15, 516657, 210906),
-    || normal_day(day16::run, 16, 0, 0),
+    || normal_day(day16::run, 16, 6514, 0),
 ];
 
 fn main() -> color_eyre::Result<()> {
