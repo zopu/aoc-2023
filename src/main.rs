@@ -9,6 +9,7 @@ mod day12;
 mod day13;
 mod day14;
 mod day15;
+mod day16;
 mod day2;
 mod day3;
 mod day4;
@@ -28,7 +29,7 @@ struct AppArgs {
     parallel: bool,
 }
 
-const DAYS: [fn() -> color_eyre::Result<()>; 15] = [
+const DAYS: [fn() -> color_eyre::Result<()>; 16] = [
     || normal_day(day1::run, 1, 55816, 54980),
     || normal_day(day2::run, 2, 2685, 83707),
     || normal_day(day3::run, 3, 527369, 73074886),
@@ -44,6 +45,7 @@ const DAYS: [fn() -> color_eyre::Result<()>; 15] = [
     || normal_day(day13::run, 13, 37718, 40995),
     || normal_day(day14::run, 14, 102497, 105008),
     || normal_day(day15::run, 15, 516657, 210906),
+    || normal_day(day16::run, 16, 0, 0),
 ];
 
 fn main() -> color_eyre::Result<()> {
