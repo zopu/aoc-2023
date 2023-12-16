@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use color_eyre::Result;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::grid::Grid;
 
@@ -15,22 +16,45 @@ enum Dir {
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let input_grid = Grid::<char>::parse(input);
     let p1 = count_energized_tiles(&input_grid, (0, 0), Dir::East);
-    let max_top = (0..input_grid.dimensions.0)
-        .map(|x| count_energized_tiles(&input_grid, (x, 0), Dir::South))
-        .max()
-        .unwrap();
-    let max_bottom = (0..input_grid.dimensions.0)
-        .map(|x| count_energized_tiles(&input_grid, (x, input_grid.dimensions.1 - 1), Dir::North))
-        .max()
-        .unwrap();
-    let max_left = (0..input_grid.dimensions.1)
-        .map(|y| count_energized_tiles(&input_grid, (0, y), Dir::East))
-        .max()
-        .unwrap();
-    let max_right = (0..input_grid.dimensions.1)
-        .map(|y| count_energized_tiles(&input_grid, (input_grid.dimensions.0 - 1, y), Dir::West))
-        .max()
-        .unwrap();
+    let mut max_top: u32 = 0;
+    let mut max_bottom: u32 = 0;
+    let mut max_left: u32 = 0;
+    let mut max_right: u32 = 0;
+
+    rayon::scope(|s| {
+        s.spawn(|_| {
+            max_top = (0..input_grid.dimensions.0)
+                .into_par_iter()
+                .map(|x| count_energized_tiles(&input_grid, (x, 0), Dir::South))
+                .max()
+                .unwrap();
+        });
+        s.spawn(|_| {
+            max_bottom = (0..input_grid.dimensions.0)
+                .into_par_iter()
+                .map(|x| {
+                    count_energized_tiles(&input_grid, (x, input_grid.dimensions.1 - 1), Dir::North)
+                })
+                .max()
+                .unwrap();
+        });
+        s.spawn(|_| {
+            max_left = (0..input_grid.dimensions.1)
+                .into_par_iter()
+                .map(|y| count_energized_tiles(&input_grid, (0, y), Dir::East))
+                .max()
+                .unwrap();
+        });
+        s.spawn(|_| {
+            max_right = (0..input_grid.dimensions.1)
+                .into_par_iter()
+                .map(|y| {
+                    count_energized_tiles(&input_grid, (input_grid.dimensions.0 - 1, y), Dir::West)
+                })
+                .max()
+                .unwrap();
+        });
+    });
     let p2 = *[max_top, max_bottom, max_left, max_right]
         .iter()
         .max()
@@ -96,4 +120,5 @@ mod tests {
     sample_test!(sample_part1, 16, Some(46), None);
     sample_test!(sample_part2, 16, None, Some(51));
     input_test!(part1, 16, Some(6514), None);
+    input_test!(part2, 16, None, Some(8089));
 }
