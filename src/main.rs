@@ -90,7 +90,7 @@ fn run_all_days(parallel: bool) -> color_eyre::Result<()> {
         "Total time: {}. Remaining time budget: {}. {}/day avg remaining",
         format_runtime_duration(&duration),
         format_runtime_duration(&budget),
-        format_runtime_duration(&(budget / 23)),
+        format_runtime_duration(&(budget / (25 - DAYS.len()) as u32)),
     );
     Ok(())
 }
