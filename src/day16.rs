@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::Debug};
+use std::fmt::Debug;
 
 use color_eyre::Result;
 
@@ -40,17 +40,18 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
 
 fn count_energized_tiles(grid: &Grid<char>, start_location: (usize, usize), start_dir: Dir) -> u32 {
     let (dim_x, dim_y) = grid.dimensions;
-    let mut visited: Grid<HashSet<Dir>> = Grid::new(HashSet::new(), dim_x, dim_y);
+    let mut visited: Grid<u8> = Grid::new(0, dim_x, dim_y);
     let mut to_visit: Vec<((usize, usize), Dir)> = vec![(start_location, start_dir)];
     while let Some(((x, y), dir)) = to_visit.pop() {
         if x >= dim_x || y >= dim_y {
             continue;
         }
         let visited_point = visited.at_mut(x, y);
-        if visited_point.contains(&dir) {
+
+        if *visited_point & (1 << dir as u8) > 0 {
             continue;
         }
-        visited_point.insert(dir);
+        *visited_point |= 1 << dir as u8;
 
         match (grid.at(x, y), dir) {
             ('-' | '.', Dir::East) if x < dim_x - 1 => to_visit.push(((x + 1, y), Dir::East)),
@@ -84,7 +85,7 @@ fn count_energized_tiles(grid: &Grid<char>, start_location: (usize, usize), star
             _ => {}
         }
     }
-    visited.iter().filter(|hs| !hs.is_empty()).count() as u32
+    visited.iter().filter(|&&bitset| bitset > 0).count() as u32
 }
 
 #[cfg(test)]
