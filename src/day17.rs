@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use color_eyre::Result;
 use pathfinding::directed::astar::astar;
 
@@ -68,18 +70,26 @@ fn h_sum(grid: &Grid<u8>, x: i32, y: i32, window: usize) -> u64 {
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let grid: Grid<u8> = Grid::parse(input, |c: char| c.to_string().parse::<u8>().unwrap());
-    let p1 = solve(&grid, 1, 3);
-    let p2 = solve(&grid, 4, 10);
+    let (p1, p2) = rayon::join(|| solve(&grid, 1, 3), || solve(&grid, 4, 10));
     Ok((p1, p2))
 }
 
 fn solve(grid: &Grid<u8>, min_move: usize, max_move: usize) -> u64 {
+    let (h_result, v_result) = rayon::join(
+        || solve_from_start_axis(grid, Axis::Horizontal, min_move, max_move).unwrap(),
+        || solve_from_start_axis(grid, Axis::Vertical, min_move, max_move).unwrap(),
+    );
+    min(h_result, v_result)
+}
+
+fn solve_from_start_axis(
+    grid: &Grid<u8>,
+    axis: Axis,
+    min_move: usize,
+    max_move: usize,
+) -> Option<u64> {
     let (dim_x, dim_y) = grid.dimensions;
-    let start_pos = Pos {
-        x: 0,
-        y: 0,
-        axis: Axis::Horizontal,
-    };
+    let start_pos = Pos { x: 0, y: 0, axis };
     let h = |pos: &Pos| astar_heuristic(pos, grid);
     let success = |pos: &Pos| pos.x == dim_x as i32 - 1 && pos.y == dim_y as i32 - 1;
     let result = astar(
@@ -88,28 +98,10 @@ fn solve(grid: &Grid<u8>, min_move: usize, max_move: usize) -> u64 {
         h,
         success,
     );
-    let mut min_cost = 0;
     if let Some((_, cost)) = result {
-        min_cost = cost;
+        return Some(cost);
     }
-
-    let start_pos = Pos {
-        x: 0,
-        y: 0,
-        axis: Axis::Vertical,
-    };
-    let result = astar(
-        &start_pos,
-        |p| successors(p, grid, min_move, max_move),
-        h,
-        success,
-    );
-    if let Some((_, cost)) = result {
-        if cost < min_cost {
-            min_cost = cost;
-        }
-    }
-    min_cost
+    None
 }
 
 fn astar_heuristic(pos: &Pos, grid: &Grid<u8>) -> u64 {
