@@ -22,8 +22,8 @@ impl Clone for Platform {
     // I don't know why, but handrolling this is slightly (but statsig) faster than deriving Clone for Platform.
     fn clone(&self) -> Self {
         Self {
-            tilt: self.tilt.clone(),
-            side_len: self.side_len.clone(),
+            tilt: self.tilt,
+            side_len: self.side_len,
             grid: self.grid.clone(),
         }
     }
