@@ -23,9 +23,13 @@ impl<T> Grid<T> {
         &mut self.grid[y * self.dimensions.0 + x]
     }
 
-    pub fn parse(input: &str) -> Grid<char> {
+    pub fn parse(input: &str, parse_char: impl Fn(char) -> T) -> Grid<T> {
         let dimensions = (input.lines().count(), input.lines().next().unwrap().len());
-        let grid = input.chars().filter(|c| *c != '\n').collect::<Vec<char>>();
+        let grid = input
+            .chars()
+            .filter(|c| *c != '\n')
+            .map(parse_char)
+            .collect::<Vec<T>>();
 
         Grid { dimensions, grid }
     }
@@ -40,9 +44,9 @@ where
     T: Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in 0..self.dimensions.0 {
-            for c in 0..self.dimensions.1 {
-                write!(f, "{:?}", self.at(row, c))?;
+        for row in 0..self.dimensions.1 {
+            for c in 0..self.dimensions.0 {
+                write!(f, "{:?}", self.at(c, row))?;
             }
             writeln!(f)?;
         }
@@ -52,9 +56,9 @@ where
 
 impl Display for Grid<char> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in 0..self.dimensions.0 {
-            for c in 0..self.dimensions.1 {
-                write!(f, "{}", self.at(row, c))?;
+        for row in 0..self.dimensions.1 {
+            for c in 0..self.dimensions.0 {
+                write!(f, "{}", self.at(c, row))?;
             }
             writeln!(f)?;
         }

@@ -14,7 +14,7 @@ enum Dir {
 }
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
-    let input_grid = Grid::<char>::parse(input);
+    let input_grid = Grid::<char>::parse(input, |c| c);
     let p1 = count_energized_tiles(&input_grid, (0, 0), Dir::East);
     let mut max_top: u32 = 0;
     let mut max_bottom: u32 = 0;
