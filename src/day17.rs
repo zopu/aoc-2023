@@ -22,12 +22,12 @@ impl Pos {
     }
 }
 
-fn successors(pos: &Pos, grid: &Grid<u8>) -> Vec<(Pos, u64)> {
+fn successors(pos: &Pos, grid: &Grid<u8>, min_move: usize, max_move: usize) -> Vec<(Pos, u64)> {
     let mut v = vec![];
     let (x, y) = (pos.x, pos.y);
     match pos.axis {
         Axis::Horizontal => {
-            for n in 1..=3 {
+            for n in (min_move as i32)..=(max_move as i32) {
                 if pos.x - n >= 0 {
                     let cost = h_sum(grid, pos.x - n, pos.y, n as usize);
                     v.push((Pos::new(x - n, y, Axis::Vertical), cost));
@@ -39,7 +39,7 @@ fn successors(pos: &Pos, grid: &Grid<u8>) -> Vec<(Pos, u64)> {
             }
         }
         Axis::Vertical => {
-            for n in 1..=3 {
+            for n in (min_move as i32)..=(max_move as i32) {
                 if pos.y - n >= 0 {
                     let cost = v_sum(grid, pos.x, pos.y - n, n as usize);
                     v.push((Pos::new(x, y - n, Axis::Horizontal), cost));
@@ -66,27 +66,31 @@ fn h_sum(grid: &Grid<u8>, x: i32, y: i32, window: usize) -> u64 {
         .sum::<u64>()
 }
 
-fn astar_heuristic(pos: &Pos, grid: &Grid<u8>) -> u64 {
-    // Just assume that the most direct path only has "1"s
-    let (dim_x, dim_y) = grid.dimensions;
-    (dim_x as u64 - 1 - pos.x as u64) + (dim_y as u64 - 1 - pos.y as u64)
-}
-
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let grid: Grid<u8> = Grid::parse(input, |c: char| c.to_string().parse::<u8>().unwrap());
-    let (dim_x, dim_y) = grid.dimensions;
+    let p1 = solve(&grid, 1, 3);
+    let p2 = solve(&grid, 4, 10);
+    Ok((p1, p2))
+}
 
+fn solve(grid: &Grid<u8>, min_move: usize, max_move: usize) -> u64 {
+    let (dim_x, dim_y) = grid.dimensions;
     let start_pos = Pos {
         x: 0,
         y: 0,
         axis: Axis::Horizontal,
     };
-    let h = |pos: &Pos| astar_heuristic(pos, &grid);
+    let h = |pos: &Pos| astar_heuristic(pos, grid);
     let success = |pos: &Pos| pos.x == dim_x as i32 - 1 && pos.y == dim_y as i32 - 1;
-    let result = astar(&start_pos, |p| successors(p, &grid), h, success);
-    let mut p1 = 0;
+    let result = astar(
+        &start_pos,
+        |p| successors(p, grid, min_move, max_move),
+        h,
+        success,
+    );
+    let mut min_cost = 0;
     if let Some((_, cost)) = result {
-        p1 = cost;
+        min_cost = cost;
     }
 
     let start_pos = Pos {
@@ -94,13 +98,24 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
         y: 0,
         axis: Axis::Vertical,
     };
-    let result = astar(&start_pos, |p| successors(p, &grid), h, success);
+    let result = astar(
+        &start_pos,
+        |p| successors(p, grid, min_move, max_move),
+        h,
+        success,
+    );
     if let Some((_, cost)) = result {
-        if cost < p1 {
-            p1 = cost;
+        if cost < min_cost {
+            min_cost = cost;
         }
     }
-    Ok((p1, 0))
+    min_cost
+}
+
+fn astar_heuristic(pos: &Pos, grid: &Grid<u8>) -> u64 {
+    // Just assume that the most direct path only has "1"s
+    let (dim_x, dim_y) = grid.dimensions;
+    (dim_x as u64 - 1 - pos.x as u64) + (dim_y as u64 - 1 - pos.y as u64)
 }
 
 #[cfg(test)]
@@ -109,5 +124,7 @@ mod tests {
     use crate::runner::test::{input_test, sample_test};
 
     sample_test!(sample_part1, 17, Some(102), None);
+    sample_test!(sample_part2, 17, None, Some(94));
     input_test!(part1, 17, Some(1155), None);
+    input_test!(part2, 17, None, Some(1283));
 }
