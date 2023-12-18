@@ -16,6 +16,8 @@ impl<T> Grid<T> {
     }
 
     pub fn at(&self, x: usize, y: usize) -> &T {
+        debug_assert!(x < self.dimensions.0, "x {} out of bounds", x);
+        debug_assert!(y < self.dimensions.1, "y {} out of bounds", y);
         &self.grid[y * self.dimensions.0 + x]
     }
 

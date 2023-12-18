@@ -16,147 +16,54 @@ struct Pos {
     axis: Axis,
 }
 
+impl Pos {
+    fn new(x: i32, y: i32, axis: Axis) -> Self {
+        Self { x, y, axis }
+    }
+}
+
 fn successors(pos: &Pos, grid: &Grid<u8>) -> Vec<(Pos, u64)> {
     let mut v = vec![];
+    let (x, y) = (pos.x, pos.y);
     match pos.axis {
         Axis::Horizontal => {
-            if pos.x - 3 >= 0 {
-                v.push((
-                    Pos {
-                        x: pos.x - 3,
-                        y: pos.y,
-                        axis: Axis::Vertical,
-                    },
-                    *grid.at(pos.x as usize - 1, pos.y as usize) as u64
-                        + *grid.at(pos.x as usize - 2, pos.y as usize) as u64
-                        + *grid.at(pos.x as usize - 3, pos.y as usize) as u64,
-                ));
-            }
-            if pos.x - 2 >= 0 {
-                v.push((
-                    Pos {
-                        x: pos.x - 2,
-                        y: pos.y,
-                        axis: Axis::Vertical,
-                    },
-                    *grid.at(pos.x as usize - 1, pos.y as usize) as u64
-                        + *grid.at(pos.x as usize - 2, pos.y as usize) as u64,
-                ));
-            }
-            if pos.x > 0 {
-                v.push((
-                    Pos {
-                        x: pos.x - 1,
-                        y: pos.y,
-                        axis: Axis::Vertical,
-                    },
-                    *grid.at(pos.x as usize - 1, pos.y as usize) as u64,
-                ));
-            }
-            if pos.x < grid.dimensions.0 as i32 - 1 {
-                v.push((
-                    Pos {
-                        x: pos.x + 1,
-                        y: pos.y,
-                        axis: Axis::Vertical,
-                    },
-                    *grid.at(pos.x as usize + 1, pos.y as usize) as u64,
-                ));
-            }
-            if pos.x + 2 <= grid.dimensions.0 as i32 - 1 {
-                v.push((
-                    Pos {
-                        x: pos.x + 2,
-                        y: pos.y,
-                        axis: Axis::Vertical,
-                    },
-                    *grid.at(pos.x as usize + 1, pos.y as usize) as u64
-                        + *grid.at(pos.x as usize + 2, pos.y as usize) as u64,
-                ));
-            }
-            if pos.x + 3 <= grid.dimensions.0 as i32 - 1 {
-                v.push((
-                    Pos {
-                        x: pos.x + 3,
-                        y: pos.y,
-                        axis: Axis::Vertical,
-                    },
-                    *grid.at(pos.x as usize + 1, pos.y as usize) as u64
-                        + *grid.at(pos.x as usize + 2, pos.y as usize) as u64
-                        + *grid.at(pos.x as usize + 3, pos.y as usize) as u64,
-                ));
+            for n in 1..=3 {
+                if pos.x - n >= 0 {
+                    let cost = h_sum(grid, pos.x - n, pos.y, n as usize);
+                    v.push((Pos::new(x - n, y, Axis::Vertical), cost));
+                }
+                if pos.x + n <= grid.dimensions.0 as i32 - 1 {
+                    let cost = h_sum(grid, pos.x + 1, pos.y, n as usize);
+                    v.push((Pos::new(x + n, y, Axis::Vertical), cost));
+                }
             }
         }
         Axis::Vertical => {
-            if pos.y - 3 >= 0 {
-                v.push((
-                    Pos {
-                        x: pos.x,
-                        y: pos.y - 3,
-                        axis: Axis::Horizontal,
-                    },
-                    *grid.at(pos.x as usize, pos.y as usize - 1) as u64
-                        + *grid.at(pos.x as usize, pos.y as usize - 2) as u64
-                        + *grid.at(pos.x as usize, pos.y as usize - 3) as u64,
-                ));
-            }
-            if pos.y - 2 >= 0 {
-                v.push((
-                    Pos {
-                        x: pos.x,
-                        y: pos.y - 2,
-                        axis: Axis::Horizontal,
-                    },
-                    *grid.at(pos.x as usize, pos.y as usize - 1) as u64
-                        + *grid.at(pos.x as usize, pos.y as usize - 2) as u64,
-                ));
-            }
-            if pos.y > 0 {
-                v.push((
-                    Pos {
-                        x: pos.x,
-                        y: pos.y - 1,
-                        axis: Axis::Horizontal,
-                    },
-                    *grid.at(pos.x as usize, pos.y as usize - 1) as u64,
-                ));
-            }
-            if pos.y < grid.dimensions.1 as i32 - 1 {
-                v.push((
-                    Pos {
-                        x: pos.x,
-                        y: pos.y + 1,
-                        axis: Axis::Horizontal,
-                    },
-                    *grid.at(pos.x as usize, pos.y as usize + 1) as u64,
-                ));
-            }
-            if pos.y + 2 <= grid.dimensions.1 as i32 - 1 {
-                v.push((
-                    Pos {
-                        x: pos.x,
-                        y: pos.y + 2,
-                        axis: Axis::Horizontal,
-                    },
-                    *grid.at(pos.x as usize, pos.y as usize + 1) as u64
-                        + *grid.at(pos.x as usize, pos.y as usize + 2) as u64,
-                ));
-            }
-            if pos.y + 3 <= grid.dimensions.1 as i32 - 1 {
-                v.push((
-                    Pos {
-                        x: pos.x,
-                        y: pos.y + 3,
-                        axis: Axis::Horizontal,
-                    },
-                    *grid.at(pos.x as usize, pos.y as usize + 1) as u64
-                        + *grid.at(pos.x as usize, pos.y as usize + 2) as u64
-                        + *grid.at(pos.x as usize, pos.y as usize + 3) as u64,
-                ));
+            for n in 1..=3 {
+                if pos.y - n >= 0 {
+                    let cost = v_sum(grid, pos.x, pos.y - n, n as usize);
+                    v.push((Pos::new(x, y - n, Axis::Horizontal), cost));
+                }
+                if pos.y + n <= grid.dimensions.1 as i32 - 1 {
+                    let cost = v_sum(grid, pos.x, pos.y + 1, n as usize);
+                    v.push((Pos::new(x, y + n, Axis::Horizontal), cost));
+                }
             }
         }
     }
     v
+}
+
+fn v_sum(grid: &Grid<u8>, x: i32, y: i32, window: usize) -> u64 {
+    (0..window)
+        .map(|n| *grid.at(x as usize, y as usize + n) as u64)
+        .sum::<u64>()
+}
+
+fn h_sum(grid: &Grid<u8>, x: i32, y: i32, window: usize) -> u64 {
+    (0..window)
+        .map(|n| *grid.at(x as usize + n, y as usize) as u64)
+        .sum::<u64>()
 }
 
 fn astar_heuristic(pos: &Pos, grid: &Grid<u8>) -> u64 {
