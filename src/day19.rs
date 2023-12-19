@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Range};
 
 use color_eyre::{eyre::anyhow, Result};
 use nom::{
@@ -44,7 +44,9 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
             sum += part.iter().map(|n| *n as u64).sum::<u64>();
         }
     }
-    Ok((sum, 0))
+    let part_ranges: [Range<u16>; 4] = [1..4001, 1..4001, 1..4001, 1..4001];
+    let p2 = count_accepted_combinantions(part_ranges, &workflows, first);
+    Ok((sum, p2))
 }
 
 fn follow_workflow(part: &[u16; 4], workflows: &[Vec<Instruction>], from: u16) -> bool {
@@ -76,6 +78,56 @@ fn follow_workflow(part: &[u16; 4], workflows: &[Vec<Instruction>], from: u16) -
                         if val < *operand {
                             return follow_workflow(part, workflows, *target);
                         }
+                    }
+                }
+            }
+        }
+    }
+    panic!("Should never get here!");
+}
+
+fn count_accepted_combinantions(
+    part_ranges: [Range<u16>; 4],
+    workflows: &[Vec<Instruction>],
+    from: u16,
+) -> u64 {
+    if from == 0 {
+        return part_ranges.iter().map(|r| r.len() as u64).product();
+    }
+    if from == 1 {
+        return 0;
+    }
+    if part_ranges.iter().any(|r| r.is_empty()) {
+        return 0;
+    }
+    let mut sum: u64 = 0;
+    let mut filtered_part_ranges = part_ranges.clone();
+    for ins in &workflows[from as usize] {
+        match ins {
+            Instruction::Goto(to) => {
+                return sum + count_accepted_combinantions(filtered_part_ranges, workflows, *to);
+            }
+            Instruction::Comparison {
+                category,
+                op,
+                operand,
+                target,
+            } => {
+                let val_range = filtered_part_ranges[*category as usize].clone();
+                match op {
+                    Op::Gt => {
+                        let new_range = (*operand + 1)..val_range.end;
+                        let mut child_ranges = filtered_part_ranges.clone();
+                        child_ranges[*category as usize] = new_range;
+                        sum += count_accepted_combinantions(child_ranges, workflows, *target);
+                        filtered_part_ranges[*category as usize] = val_range.start..(*operand + 1);
+                    }
+                    Op::Lt => {
+                        let new_range = val_range.start..*operand;
+                        let mut child_ranges = filtered_part_ranges.clone();
+                        child_ranges[*category as usize] = new_range;
+                        sum += count_accepted_combinantions(child_ranges, workflows, *target);
+                        filtered_part_ranges[*category as usize] = *operand..val_range.end;
                     }
                 }
             }
@@ -235,7 +287,9 @@ mod tests {
     use color_eyre::Result;
 
     sample_test!(sample_part1, 19, Some(19114), None);
+    sample_test!(sample_part2, 19, None, Some(167409079868000));
     input_test!(part1, 19, Some(374873), None);
+    input_test!(part2, 19, None, Some(122112157518711));
 
     #[test]
     fn can_parse_instruction() -> Result<()> {
@@ -248,6 +302,39 @@ mod tests {
         assert_eq!(4, instructions.len());
         assert_eq!(7, next_symbol);
         assert_eq!(id, symbols["grc"]);
+        Ok(())
+    }
+
+    #[test]
+    fn counts_all_combinations() -> Result<()> {
+        let s = "in{A}";
+        let (_, p2) = super::run(s)?;
+        assert_eq!(4000 * 4000 * 4000 * 4000, p2);
+        Ok(())
+    }
+
+    #[test]
+    fn counts_all_rejects() -> Result<()> {
+        let s = "in{R}";
+        let (_, p2) = super::run(s)?;
+        assert_eq!(0, p2);
+        Ok(())
+    }
+
+    #[test]
+    fn counts_half_combinations() -> Result<()> {
+        let s = "in{x>2000:A,R}";
+        let (_, p2) = super::run(s)?;
+        assert_eq!(2000 * 4000 * 4000 * 4000, p2);
+        let s = "in{x<2001:A,R}";
+        let (_, p2) = super::run(s)?;
+        assert_eq!(2000 * 4000 * 4000 * 4000, p2);
+        let s = "in{x>2000:R,A}";
+        let (_, p2) = super::run(s)?;
+        assert_eq!(2000 * 4000 * 4000 * 4000, p2);
+        let s = "in{x<2001:R,A}";
+        let (_, p2) = super::run(s)?;
+        assert_eq!(2000 * 4000 * 4000 * 4000, p2);
         Ok(())
     }
 }
