@@ -1,9 +1,16 @@
-use std::fmt::Debug;
+use std::{
+    cell::RefCell,
+    cmp::max,
+    fmt::Debug,
+    hash::{Hash, Hasher},
+    rc::Rc,
+};
 
 use color_eyre::Result;
 use pathfinding::directed::cycle_detection::brent;
+use rustc_hash::FxHasher;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 enum Tilt {
     East,
     West,
@@ -11,7 +18,7 @@ enum Tilt {
     South,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Hash)]
 struct Platform {
     tilt: Option<Tilt>,
     side_len: usize,
@@ -79,7 +86,7 @@ impl Platform {
         }
     }
 
-    fn rotate_tilt(mut self) -> Platform {
+    fn rotate_tilt(&mut self) {
         match self.tilt {
             None => self.tilt_north(),
             Some(Tilt::North) => self.tilt_west(),
@@ -87,11 +94,13 @@ impl Platform {
             Some(Tilt::South) => self.tilt_east(),
             Some(Tilt::East) => self.tilt_north(),
         }
-        self
     }
 
-    fn cycle(self) -> Platform {
-        self.rotate_tilt().rotate_tilt().rotate_tilt().rotate_tilt()
+    fn cycle(&mut self) {
+        self.rotate_tilt();
+        self.rotate_tilt();
+        self.rotate_tilt();
+        self.rotate_tilt();
     }
 
     fn north_load(&self) -> u64 {
@@ -223,20 +232,84 @@ impl From<&str> for Platform {
     }
 }
 
+#[derive(Debug, Clone)]
+struct LazyPlatformHashIterator {
+    platform: Rc<RefCell<Platform>>,
+    hashes_and_loads: Rc<RefCell<Vec<(u64, u64)>>>,
+    idx: usize,
+}
+
+impl LazyPlatformHashIterator {
+    fn new(platform: Platform) -> Self {
+        let mut s = FxHasher::default();
+        platform.hash(&mut s);
+        let hash = s.finish();
+        let load = platform.north_load();
+        let hashes_and_loads = Rc::new(RefCell::new(vec![(hash, load)]));
+        let platform = Rc::new(RefCell::new(platform));
+        Self {
+            platform: platform.clone(),
+            hashes_and_loads,
+            idx: 0,
+        }
+    }
+
+    fn cycle(&mut self) {
+        let gap = self.hashes_and_loads.borrow().len() as i32 - self.idx as i32;
+        if gap < 1 {
+            self.calc_forward(1 - gap as usize);
+        }
+        self.idx += 1;
+    }
+}
+
+impl LazyPlatformHashIterator {
+    fn calc_forward(&self, n: usize) {
+        for _ in 0..n {
+            let mut platform = self.platform.borrow_mut();
+            platform.cycle();
+            let mut s = FxHasher::default();
+            platform.hash(&mut s);
+            let hash = s.finish();
+            let load = platform.north_load();
+            {
+                self.hashes_and_loads.borrow_mut().push((hash, load));
+            }
+        }
+    }
+}
+
+impl PartialEq for LazyPlatformHashIterator {
+    fn eq(&self, other: &Self) -> bool {
+        // Wind forward until both idxes are within the hashes_and_loads
+        if max(self.idx, other.idx) >= self.hashes_and_loads.borrow().len() {
+            let n = max(self.idx, other.idx) - self.hashes_and_loads.borrow().len() + 1;
+            self.calc_forward(n);
+        }
+
+        self.hashes_and_loads.borrow()[self.idx].0 == other.hashes_and_loads.borrow()[other.idx].0
+    }
+}
+
 pub fn run(input: &str) -> Result<(u64, u64)> {
-    let platform = Platform::from(input);
-    let platform = platform.rotate_tilt();
+    let mut platform = Platform::from(input);
+    platform.rotate_tilt();
     let p1 = platform.north_load();
 
     // Finish the first cycle
-    let first_platform = platform.rotate_tilt().rotate_tilt().rotate_tilt();
-
-    let (cycle_size, mut p, i) = brent(first_platform.clone(), |p| p.cycle());
-    let equivalent = (1_000_000_000 - i - 1) % cycle_size;
-    for _ in 0..(equivalent) {
-        p = p.cycle();
+    let mut first_platform = platform.clone();
+    for _ in 0..3 {
+        first_platform.rotate_tilt();
     }
-    let p2 = p.north_load();
+
+    let it = LazyPlatformHashIterator::new(first_platform);
+
+    let (cycle_size, _, i) = brent(it.clone(), |mut it| {
+        it.cycle();
+        it
+    });
+    let equivalent = (1_000_000_000 - i - 1) % cycle_size;
+    let p2 = it.hashes_and_loads.borrow()[i + equivalent].1;
     Ok((p1, p2))
 }
 
