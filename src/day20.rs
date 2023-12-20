@@ -5,6 +5,7 @@ use nom::{
     branch::alt, bytes::complete::tag, character::complete::alpha1, combinator::value,
     sequence::tuple, IResult,
 };
+use num::Integer;
 
 use crate::symbol_table::SymbolTable;
 
@@ -16,20 +17,57 @@ struct Pulse {
 }
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
-    let (mut modules, _module_ids, broadcaster_id) = build_modules(input)?;
+    let (mut modules, mut module_ids, broadcaster_id, rx_id) = build_modules(input)?;
 
     let (mut low_counts, mut high_counts) = (0, 0);
     for _ in 0..1000 {
-        let (lc, hc) = push_button(&mut modules, broadcaster_id);
+        let (lc, hc, _parent_triggers) =
+            push_button(&mut modules, &mut module_ids, broadcaster_id, rx_id);
         low_counts += lc;
         high_counts += hc;
     }
-
     let p1 = low_counts * high_counts;
-    Ok((p1, 0))
+
+    let (mut modules, mut module_ids, broadcaster_id, rx_id) = build_modules(input)?;
+
+    // We're looking for cycles in the four modules that feed into rx
+    let mut cycle_counters: [u64; 4] = [0, 0, 0, 0];
+    if rx_id > 0 {
+        for i in 0..100_000 {
+            // 100k should be plenty and we'll break when done
+            let (_lc, _hc, parent_triggers) =
+                push_button(&mut modules, &mut module_ids, broadcaster_id, rx_id);
+            if parent_triggers.iter().any(|t| *t > 0) {
+                // println!("Got a trigger at {} steps: {:?}", i, parent_triggers);
+                for (j, t) in parent_triggers.iter().enumerate() {
+                    if cycle_counters[j] == 0 && *t > 0 {
+                        cycle_counters[j] = i as u64 + 1;
+                    }
+                }
+                if cycle_counters.iter().all(|n| *n > 0) {
+                    break;
+                }
+            }
+        }
+    }
+    let p2: u64 = cycle_counters.iter().cloned().fold(1u64, |p, a| p.lcm(&a));
+
+    Ok((p1, p2))
 }
 
-fn push_button(modules: &mut [Module], broadcaster_id: ModuleId) -> (u64, u64) {
+fn push_button(
+    modules: &mut [Module],
+    module_ids: &mut SymbolTable,
+    broadcaster_id: ModuleId,
+    rx_id: ModuleId,
+) -> (u64, u64, [u64; 4]) {
+    // We're looking for cycles in the four modules that feed into rx
+    let vb = module_ids.get("vb") as u8;
+    let kl = module_ids.get("kl") as u8;
+    let vm = module_ids.get("vm") as u8;
+    let kv = module_ids.get("kv") as u8;
+    let mut parent_triggers = [0; 4];
+
     let (mut low_counts, mut high_counts) = (0, 0);
     let mut queue: VecDeque<Pulse> = VecDeque::new();
     queue.push_back(Pulse {
@@ -44,6 +82,22 @@ fn push_button(modules: &mut [Module], broadcaster_id: ModuleId) -> (u64, u64) {
         match pulse.pulse_type {
             PulseType::High => high_counts += 1,
             PulseType::Low => low_counts += 1,
+        }
+        if rx_id > 0 {
+            if let PulseType::Low = pulse.pulse_type {
+                if pulse.receiver == vb {
+                    parent_triggers[0] += 1;
+                }
+                if pulse.receiver == kl {
+                    parent_triggers[1] += 1;
+                }
+                if pulse.receiver == vm {
+                    parent_triggers[2] += 1;
+                }
+                if pulse.receiver == kv {
+                    parent_triggers[3] += 1;
+                }
+            }
         }
         let receiver = &mut modules[pulse.receiver as usize];
         match receiver.module_type {
@@ -100,13 +154,15 @@ fn push_button(modules: &mut [Module], broadcaster_id: ModuleId) -> (u64, u64) {
             }
         }
     }
-    (low_counts, high_counts)
+    (low_counts, high_counts, parent_triggers)
 }
 
 // Last return is id of broadcaster
-fn build_modules(input: &str) -> Result<(Vec<Module>, SymbolTable, ModuleId)> {
+fn build_modules(input: &str) -> Result<(Vec<Module>, SymbolTable, ModuleId, ModuleId)> {
     let mut module_ids = SymbolTable::new();
     let mut broadcaster_id = 0;
+    let mut rx_id = 0;
+    // println!("digraph g {{");
     let parsed: Vec<_> = input
         .lines()
         .map(|l| {
@@ -115,13 +171,31 @@ fn build_modules(input: &str) -> Result<(Vec<Module>, SymbolTable, ModuleId)> {
             if let ModuleType::BroadCaster = pl.module_type {
                 broadcaster_id = mod_id;
             }
+            if pl.name == "rx" {
+                rx_id = mod_id;
+            }
             for output in &pl.outputs {
                 // Populate symbol table
-                let _output_id = module_ids.get(output);
+                let output_id = module_ids.get(output);
+                if output == &"rx" {
+                    rx_id = output_id;
+                }
             }
+            // Print dotfile format
+            // match pl.module_type {
+            //     ModuleType::BroadCaster => print!("{}", pl.name),
+            //     ModuleType::FlipFlop => print!("{} [shape=box]", pl.name),
+            //     ModuleType::Conjunction => print!("{} [shape=circle]", pl.name),
+            // }
+            // if !pl.outputs.is_empty() {
+            //     for o in &pl.outputs {
+            //         println!("{} -> {};", pl.name, o);
+            //     }
+            // }
             Ok(pl)
         })
         .collect::<Result<Vec<_>>>()?;
+    // println!("}}");
     let mut modules: Vec<Module> = vec![
         Module {
             module_type: ModuleType::BroadCaster,
@@ -150,7 +224,7 @@ fn build_modules(input: &str) -> Result<(Vec<Module>, SymbolTable, ModuleId)> {
                 .insert(mod_id as u8, PulseType::Low);
         }
     }
-    Ok((modules, module_ids, broadcaster_id as u8))
+    Ok((modules, module_ids, broadcaster_id as u8, rx_id as u8))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -212,6 +286,7 @@ mod tests {
 
     sample_test!(sample_part1, 20, Some(32000000), None);
     input_test!(part1, 20, Some(743090292), None);
+    input_test!(part2, 20, None, Some(241528184647003));
 
     file_test!(extended_part1, 20, "sample_2.txt", Some(11687500), None);
 }
