@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 
 mod runner;
+mod symbol_table;
 
 mod day1;
 mod day10;
@@ -54,7 +55,7 @@ const DAYS: [fn() -> color_eyre::Result<()>; 20] = [
     || normal_day(day17::run, 17, 1155, 1283),
     || normal_day(day18::run, 18, 31171, 131431655002266),
     || normal_day(day19::run, 19, 374873, 122112157518711),
-    || normal_day(day20::run, 20, 0, 0),
+    || normal_day(day20::run, 20, 743090292, 0),
 ];
 
 fn main() -> color_eyre::Result<()> {
