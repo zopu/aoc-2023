@@ -17,57 +17,27 @@ struct Pulse {
 }
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
-    let (mut modules, mut module_ids, broadcaster_id, rx_id) = build_modules(input)?;
+    let (mut modules, _module_ids, broadcaster_id, rx_id) = build_modules(input)?;
 
     let (mut low_counts, mut high_counts) = (0, 0);
     for _ in 0..1000 {
-        let (lc, hc, _parent_triggers) =
-            push_button(&mut modules, &mut module_ids, broadcaster_id, rx_id);
+        let (lc, hc) = push_button(&mut modules, broadcaster_id);
         low_counts += lc;
         high_counts += hc;
     }
     let p1 = low_counts * high_counts;
 
-    let (mut modules, mut module_ids, broadcaster_id, rx_id) = build_modules(input)?;
-
-    // We're looking for cycles in the four modules that feed into rx
-    let mut cycle_counters: [u64; 4] = [0, 0, 0, 0];
-    if rx_id > 0 {
-        for i in 0..100_000 {
-            // 100k should be plenty and we'll break when done
-            let (_lc, _hc, parent_triggers) =
-                push_button(&mut modules, &mut module_ids, broadcaster_id, rx_id);
-            if parent_triggers.iter().any(|t| *t > 0) {
-                // println!("Got a trigger at {} steps: {:?}", i, parent_triggers);
-                for (j, t) in parent_triggers.iter().enumerate() {
-                    if cycle_counters[j] == 0 && *t > 0 {
-                        cycle_counters[j] = i as u64 + 1;
-                    }
-                }
-                if cycle_counters.iter().all(|n| *n > 0) {
-                    break;
-                }
-            }
-        }
-    }
-    let p2: u64 = cycle_counters.iter().cloned().fold(1u64, |p, a| p.lcm(&a));
+    let p2 = if rx_id > 0 {
+        part2(&modules, broadcaster_id)
+    } else {
+        0
+    };
 
     Ok((p1, p2))
 }
 
-fn push_button(
-    modules: &mut [Module],
-    module_ids: &mut SymbolTable,
-    broadcaster_id: ModuleId,
-    rx_id: ModuleId,
-) -> (u64, u64, [u64; 4]) {
+fn push_button(modules: &mut [Module], broadcaster_id: ModuleId) -> (u64, u64) {
     // We're looking for cycles in the four modules that feed into rx
-    let vb = module_ids.get("vb") as u8;
-    let kl = module_ids.get("kl") as u8;
-    let vm = module_ids.get("vm") as u8;
-    let kv = module_ids.get("kv") as u8;
-    let mut parent_triggers = [0; 4];
-
     let (mut low_counts, mut high_counts) = (0, 0);
     let mut queue: VecDeque<Pulse> = VecDeque::new();
     queue.push_back(Pulse {
@@ -82,22 +52,6 @@ fn push_button(
         match pulse.pulse_type {
             PulseType::High => high_counts += 1,
             PulseType::Low => low_counts += 1,
-        }
-        if rx_id > 0 {
-            if let PulseType::Low = pulse.pulse_type {
-                if pulse.receiver == vb {
-                    parent_triggers[0] += 1;
-                }
-                if pulse.receiver == kl {
-                    parent_triggers[1] += 1;
-                }
-                if pulse.receiver == vm {
-                    parent_triggers[2] += 1;
-                }
-                if pulse.receiver == kv {
-                    parent_triggers[3] += 1;
-                }
-            }
         }
         let receiver = &mut modules[pulse.receiver as usize];
         match receiver.module_type {
@@ -154,7 +108,54 @@ fn push_button(
             }
         }
     }
-    (low_counts, high_counts, parent_triggers)
+    (low_counts, high_counts)
+}
+
+fn part2(modules: &[Module], broadcaster_id: ModuleId) -> u64 {
+    // Eyeballing the input, we observe that the broadcaster has 4 outputs, and each of these are the start of a MOD-12 counter
+    // So we iterate through each of these and determine which "bits" are high, to get the length of the counter.
+    modules
+        .get(broadcaster_id as usize)
+        .unwrap()
+        .outputs
+        .iter()
+        .fold(1, |p: u64, first_id| {
+            let mut binary: Vec<bool> = Vec::new();
+            let mut next_flip_flop_id = *first_id;
+            loop {
+                let outputs = &modules.get(next_flip_flop_id as usize).unwrap().outputs;
+                // There should be one output going to a flip-flop, and *maybe* one output going to a conjunction
+                let mut bit_on = false;
+                next_flip_flop_id = 0;
+                for o in outputs {
+                    let module = modules.get(*o as usize).unwrap();
+                    match module.module_type {
+                        ModuleType::FlipFlop => {
+                            next_flip_flop_id = *o;
+                        }
+                        ModuleType::Conjunction => {
+                            bit_on = true;
+                        }
+                        _ => panic!("Should never get here"),
+                    }
+                }
+                if bit_on {
+                    binary.push(true);
+                } else {
+                    binary.push(false);
+                }
+                if next_flip_flop_id == 0 {
+                    break;
+                }
+            }
+            let cycle_len = binary
+                .iter()
+                .enumerate()
+                .filter(|(_, b)| **b)
+                .map(|(i, _)| 2u64.pow(i as u32))
+                .sum::<u64>();
+            p.lcm(&cycle_len)
+        })
 }
 
 // Last return is id of broadcaster
