@@ -67,3 +67,27 @@ impl Display for Grid<char> {
         Ok(())
     }
 }
+
+impl Display for Grid<u8> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for row in 0..self.dimensions.1 {
+            for c in 0..self.dimensions.0 {
+                write!(f, "{}", *self.at(c, row) as char)?;
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T> Clone for Grid<T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            dimensions: self.dimensions,
+            grid: self.grid.clone(),
+        }
+    }
+}
