@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use color_eyre::eyre::anyhow;
 use color_eyre::Result;
 use nom::sequence::tuple;
@@ -85,7 +87,6 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     let mut supporters: Vec<Vec<usize>> = vec![vec![]; tets.len()];
     tets.iter().enumerate().for_each(|(i, tet)| {
         tets.iter().take(i).enumerate().for_each(|(j, other_tet)| {
-            // println!("Checking tets {} and {}, {:?}, {:?}", i, j, tet, other_tet);
             if other_tet.is_supporting(tet) {
                 supporters[i].push(j);
             }
@@ -93,15 +94,38 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     });
 
     let mut removable = 0;
+
     'outer: for (i, _) in tets.iter().enumerate() {
         for s in &supporters {
             if s.len() == 1 && s[0] == i {
                 continue 'outer;
             }
         }
+
         removable += 1;
     }
-    Ok((removable, 0))
+    let p1 = removable;
+
+    let mut p2_sum = 0;
+    // For each tet we find the number of other bricks it transitively supports
+    for (i, _) in tets.iter().enumerate() {
+        let mut to_remove: HashSet<u16> = HashSet::new();
+        to_remove.insert(i as u16);
+
+        for (j, s_j) in supporters.iter().enumerate() {
+            if s_j.len() == 1 && s_j[0] == i {
+                to_remove.insert(j as u16);
+                continue;
+            }
+            if !s_j.is_empty() && s_j.iter().all(|x| to_remove.contains(&(*x as u16))) {
+                to_remove.insert(j as u16);
+                continue;
+            }
+        }
+        p2_sum += to_remove.len() as u64 - 1;
+    }
+
+    Ok((p1, p2_sum))
 }
 
 #[derive(Debug)]
@@ -181,5 +205,7 @@ mod tests {
     use crate::runner::test::{input_test, sample_test};
 
     sample_test!(sample_part1, 22, Some(5), None);
+    sample_test!(sample_part2, 22, None, Some(7));
     input_test!(part1, 22, Some(499), None);
+    input_test!(part2, 22, None, Some(95059));
 }
