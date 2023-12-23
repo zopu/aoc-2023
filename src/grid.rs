@@ -40,6 +40,14 @@ impl<T> Grid<T> {
         self.grid.iter()
     }
 
+    pub fn iter_pts(&self, mut f: impl FnMut(usize, usize, &T)) {
+        for y in 0..self.dimensions.1 {
+            for x in 0..self.dimensions.0 {
+                f(x, y, self.at(x, y));
+            }
+        }
+    }
+
     #[allow(unused)]
     pub fn to_string(&self, format_elem: impl Fn(&T) -> String) -> String {
         let mut s = String::new();
