@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use color_eyre::eyre::anyhow;
 use color_eyre::Result;
 use nom::sequence::tuple;
@@ -106,23 +104,24 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     }
     let p1 = removable;
 
+    println!("tets len: {}", tets.len());
     let mut p2_sum = 0;
     // For each tet we find the number of other bricks it transitively supports
     for (i, _) in tets.iter().enumerate() {
-        let mut to_remove: BTreeSet<u16> = BTreeSet::new();
-        to_remove.insert(i as u16);
+        let mut to_remove: Vec<bool> = vec![false; tets.len()];
+        to_remove[i] = true;
 
         for (j, s_j) in supporters.iter().enumerate() {
             if s_j.len() == 1 && s_j[0] == i {
-                to_remove.insert(j as u16);
+                to_remove[j] = true;
                 continue;
             }
-            if !s_j.is_empty() && s_j.iter().all(|x| to_remove.contains(&(*x as u16))) {
-                to_remove.insert(j as u16);
+            if !s_j.is_empty() && s_j.iter().all(|x| to_remove[*x]) {
+                to_remove[j] = true;
                 continue;
             }
         }
-        p2_sum += to_remove.len() as u64 - 1;
+        p2_sum += to_remove.iter().filter(|b| **b).count() as u64 - 1;
     }
 
     Ok((p1, p2_sum))
