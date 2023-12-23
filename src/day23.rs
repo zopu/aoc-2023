@@ -6,8 +6,8 @@ use crate::grid::Grid;
 
 type Pos = (usize, usize);
 
-type NodeId = usize;
-type Distance = usize;
+type NodeId = u8;
+type Distance = u16;
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let grid = Grid::<u8>::parse(input, |c| c as u8);
@@ -23,10 +23,14 @@ fn solve(grid: &Grid<u8>, consider_slopes: bool) -> u64 {
     // Find all the nodes
 
     let nodes = find_nodes(grid);
-    let node_ids: BTreeMap<Pos, NodeId> = nodes.iter().enumerate().map(|(i, n)| (*n, i)).collect();
+    let node_ids: BTreeMap<Pos, NodeId> = nodes
+        .iter()
+        .enumerate()
+        .map(|(i, n)| (*n, i as NodeId))
+        .collect();
     let mut edges: BTreeMap<NodeId, Vec<(NodeId, Distance)>> = BTreeMap::new();
     for (i, _n) in nodes.iter().enumerate() {
-        edges.insert(i, vec![]);
+        edges.insert(i as NodeId, vec![]);
     }
 
     // For every node
@@ -65,7 +69,10 @@ fn solve(grid: &Grid<u8>, consider_slopes: bool) -> u64 {
                 (n.0, n.1),
                 consider_slopes,
             ) {
-                edges.entry(i).or_default().push((next_node, distance + 1));
+                edges
+                    .entry(i as NodeId)
+                    .or_default()
+                    .push((next_node, distance + 1));
             }
         }
     }
@@ -83,8 +90,10 @@ fn solve(grid: &Grid<u8>, consider_slopes: bool) -> u64 {
 
     let max_possible = max_edges.iter().sum();
 
+    let edge_vec: Vec<Vec<(NodeId, Distance)>> = edges.into_values().collect();
+
     find_max_distance_to_end(
-        &edges,
+        &edge_vec,
         &max_edges,
         0,
         1,
@@ -98,7 +107,7 @@ fn solve(grid: &Grid<u8>, consider_slopes: bool) -> u64 {
 
 #[allow(clippy::too_many_arguments)]
 fn find_max_distance_to_end(
-    edges: &BTreeMap<NodeId, Vec<(NodeId, Distance)>>,
+    edges: &[Vec<(NodeId, Distance)>],
     max_edges: &[Distance],
     node: NodeId,
     end_node: NodeId,
@@ -111,14 +120,14 @@ fn find_max_distance_to_end(
         return None;
     }
 
-    visited[node] = true;
+    visited[node as usize] = true;
     if node == end_node {
-        visited[node] = false;
+        visited[node as usize] = false;
         return Some(0);
     }
     let mut max_distance = 0;
-    for (next_node, distance) in &edges[&node] {
-        if visited[*next_node] {
+    for (next_node, distance) in &edges[node as usize] {
+        if visited[*next_node as usize] {
             continue;
         }
         if let Some(d) = find_max_distance_to_end(
@@ -127,7 +136,7 @@ fn find_max_distance_to_end(
             *next_node,
             end_node,
             visited,
-            max_possible - max_edges[node],
+            max_possible - max_edges[node as usize],
             current + distance,
             current_max,
         ) {
@@ -135,7 +144,7 @@ fn find_max_distance_to_end(
             current_max = current_max.max(max_distance);
         }
     }
-    visited[node] = false;
+    visited[node as usize] = false;
     if max_distance > 0 {
         Some(max_distance)
     } else {
