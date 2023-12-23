@@ -25,6 +25,9 @@ fn solve(grid: &Grid<u8>, consider_slopes: bool) -> u64 {
     let nodes = find_nodes(grid);
     let node_ids: BTreeMap<Pos, NodeId> = nodes.iter().enumerate().map(|(i, n)| (*n, i)).collect();
     let mut edges: BTreeMap<NodeId, Vec<(NodeId, Distance)>> = BTreeMap::new();
+    for (i, _n) in nodes.iter().enumerate() {
+        edges.insert(i, vec![]);
+    }
 
     // For every node
     // .  for every neighbour
@@ -72,15 +75,42 @@ fn solve(grid: &Grid<u8>, consider_slopes: bool) -> u64 {
         *nodes_grid.at_mut(*x, *y) = i as u8 + b'0';
     }
 
-    find_max_distance_to_end(&edges, 0, 1, &mut vec![false; nodes.len()]).unwrap() as u64
+    let max_edges: Vec<_> = edges
+        .values()
+        .map(|v| v.iter().map(|(_, d)| d).max().unwrap_or(&0))
+        .cloned()
+        .collect();
+
+    let max_possible = max_edges.iter().sum();
+
+    find_max_distance_to_end(
+        &edges,
+        &max_edges,
+        0,
+        1,
+        &mut vec![false; nodes.len()],
+        max_possible,
+        0,
+        0,
+    )
+    .unwrap() as u64
 }
 
+#[allow(clippy::too_many_arguments)]
 fn find_max_distance_to_end(
     edges: &BTreeMap<NodeId, Vec<(NodeId, Distance)>>,
+    max_edges: &[Distance],
     node: NodeId,
     end_node: NodeId,
     visited: &mut Vec<bool>,
+    max_possible: Distance,
+    current: Distance,
+    mut current_max: Distance,
 ) -> Option<Distance> {
+    if current + max_possible <= current_max {
+        return None;
+    }
+
     visited[node] = true;
     if node == end_node {
         visited[node] = false;
@@ -91,8 +121,18 @@ fn find_max_distance_to_end(
         if visited[*next_node] {
             continue;
         }
-        if let Some(d) = find_max_distance_to_end(edges, *next_node, end_node, visited) {
+        if let Some(d) = find_max_distance_to_end(
+            edges,
+            max_edges,
+            *next_node,
+            end_node,
+            visited,
+            max_possible - max_edges[node],
+            current + distance,
+            current_max,
+        ) {
             max_distance = max_distance.max(d + distance);
+            current_max = current_max.max(max_distance);
         }
     }
     visited[node] = false;
