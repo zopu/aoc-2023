@@ -1,5 +1,3 @@
-use std::cmp::min;
-
 use color_eyre::Result;
 use pathfinding::directed::astar::astar;
 
@@ -27,6 +25,12 @@ impl Pos {
 fn successors(pos: &Pos, grid: &Grid<u8>, min_move: usize, max_move: usize) -> Vec<(Pos, u64)> {
     let mut v = vec![];
     let (x, y) = (pos.x, pos.y);
+    if x == -1 && y == -1 {
+        // The starting position
+        v.push((Pos::new(0, 0, Axis::Horizontal), 0));
+        v.push((Pos::new(0, 0, Axis::Vertical), 0));
+        return v;
+    }
     match pos.axis {
         Axis::Horizontal => {
             for n in (min_move as i32)..=(max_move as i32) {
@@ -75,21 +79,12 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
 }
 
 fn solve(grid: &Grid<u8>, min_move: usize, max_move: usize) -> u64 {
-    let (h_result, v_result) = rayon::join(
-        || solve_from_start_axis(grid, Axis::Horizontal, min_move, max_move).unwrap(),
-        || solve_from_start_axis(grid, Axis::Vertical, min_move, max_move).unwrap(),
-    );
-    min(h_result, v_result)
-}
-
-fn solve_from_start_axis(
-    grid: &Grid<u8>,
-    axis: Axis,
-    min_move: usize,
-    max_move: usize,
-) -> Option<u64> {
     let (dim_x, dim_y) = grid.dimensions;
-    let start_pos = Pos { x: 0, y: 0, axis };
+    let start_pos = Pos {
+        x: -1,
+        y: -1,
+        axis: Axis::Horizontal,
+    };
     let h = |pos: &Pos| astar_heuristic(pos, grid);
     let success = |pos: &Pos| pos.x == dim_x as i32 - 1 && pos.y == dim_y as i32 - 1;
     let result = astar(
@@ -99,9 +94,9 @@ fn solve_from_start_axis(
         success,
     );
     if let Some((_, cost)) = result {
-        return Some(cost);
+        return cost;
     }
-    None
+    0
 }
 
 fn astar_heuristic(pos: &Pos, grid: &Grid<u8>) -> u64 {
