@@ -104,7 +104,6 @@ pub fn run(input: &str) -> Result<(u64, u64)> {
     }
     let p1 = removable;
 
-    println!("tets len: {}", tets.len());
     let mut p2_sum = 0;
     // For each tet we find the number of other bricks it transitively supports
     for (i, _) in tets.iter().enumerate() {
