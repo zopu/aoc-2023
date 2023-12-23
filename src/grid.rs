@@ -39,6 +39,18 @@ impl<T> Grid<T> {
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.grid.iter()
     }
+
+    #[allow(unused)]
+    pub fn to_string(&self, format_elem: impl Fn(&T) -> String) -> String {
+        let mut s = String::new();
+        for y in 0..self.dimensions.1 {
+            for x in 0..self.dimensions.0 {
+                s.push_str(&format_elem(self.at(x, y)));
+            }
+            s.push('\n');
+        }
+        s
+    }
 }
 
 impl<T> Debug for Grid<T>
