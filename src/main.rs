@@ -20,6 +20,7 @@ mod day21;
 mod day22;
 mod day23;
 mod day24;
+mod day25;
 mod day3;
 mod day4;
 mod day5;
@@ -39,7 +40,7 @@ struct AppArgs {
     parallel: bool,
 }
 
-const DAYS: [fn() -> color_eyre::Result<()>; 24] = [
+const DAYS: [fn() -> color_eyre::Result<()>; 25] = [
     || normal_day(day1::run, 1, 55816, 54980),
     || normal_day(day2::run, 2, 2685, 83707),
     || normal_day(day3::run, 3, 527369, 73074886),
@@ -64,6 +65,7 @@ const DAYS: [fn() -> color_eyre::Result<()>; 24] = [
     || normal_day(day22::run, 22, 499, 95059),
     || normal_day(day23::run, 23, 2186, 6802),
     || normal_day(day24::run, 24, 19523, 0),
+    || normal_day(day25::run, 25, 0, 0),
 ];
 
 fn main() -> color_eyre::Result<()> {
@@ -104,10 +106,9 @@ fn run_all_days(parallel: bool) -> color_eyre::Result<()> {
     let duration = Instant::now().duration_since(start);
     let budget = Duration::from_secs(1) - duration;
     println!(
-        "Total time: {}. Remaining time budget: {}. {}/day avg remaining",
+        "Total time: {}. Remaining time budget: {}.",
         format_runtime_duration(&duration),
         format_runtime_duration(&budget),
-        format_runtime_duration(&(budget / (25 - DAYS.len()) as u32)),
     );
     Ok(())
 }
