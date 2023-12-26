@@ -64,7 +64,7 @@ const DAYS: [fn() -> color_eyre::Result<()>; 25] = [
     || normal_day(day21::run, 21, 3591, 598044246091826),
     || normal_day(day22::run, 22, 499, 95059),
     || normal_day(day23::run, 23, 2186, 6802),
-    || normal_day(day24::run, 24, 19523, 0),
+    || normal_day(day24::run, 24, 19523, 566373506408017),
     || normal_day(day25::run, 25, 506202, 0),
 ];
 
@@ -104,7 +104,12 @@ fn run_all_days(parallel: bool) -> color_eyre::Result<()> {
     }
 
     let duration = Instant::now().duration_since(start);
-    let budget = Duration::from_secs(1) - duration;
+
+    let budget = if duration > Duration::from_secs(1) {
+        Duration::ZERO
+    } else {
+        Duration::from_secs(1) - duration
+    };
     println!(
         "Total time: {}. Remaining time budget: {}.",
         format_runtime_duration(&duration),

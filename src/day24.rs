@@ -4,6 +4,7 @@ use nom::bytes::complete::tag;
 use nom::character::complete::{i128 as ni128, multispace0};
 use nom::sequence::tuple;
 use nom::IResult;
+use z3::ast::Ast;
 
 #[derive(Debug, PartialEq)]
 struct Line {
@@ -52,51 +53,6 @@ impl Line {
         Some((p_x, p_y))
     }
 
-    #[allow(dead_code)]
-    fn intersects_old(&self, other: &Line) -> Option<(f64, f64)> {
-        // Why doesn't this give the same answer??
-        let (x1, y1, _z1) = self.at;
-        let (x2, y2, _z2) = (
-            (self.at.0 + self.dir.0),
-            (self.at.1 + self.dir.1),
-            (self.at.2 + self.dir.2),
-        );
-        let (x3, y3, _z3) = other.at;
-        let (x4, y4, _z4) = (
-            (other.at.0 + other.dir.0),
-            (other.at.1 + other.dir.1),
-            (other.at.2 + other.dir.2),
-        );
-
-        let i_x_n = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
-        let i_x_d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-        if i_x_d == 0.0 {
-            println!("Hailstones {:?}, {:?} paths are parallel (x)", self, other);
-            return None;
-        }
-        let i_y_n = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
-        let i_y_d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-        if i_y_d == 0.0 {
-            println!("Hailstones {:?}, {:?} paths are parallel (y)", self, other);
-            return None;
-        }
-        let i_x = i_x_n / i_x_d;
-        let i_y = i_y_n / i_y_d;
-        // println!("Intersection at {}, {}", i_x, i_y);
-
-        // Check that i_x, i_y is in the future
-        if !self.point_in_future(i_x, i_y) {
-            // println!("Intersection in past between {:?} and {:?}", self, other);
-            return None;
-        }
-        if !other.point_in_future(i_x, i_y) {
-            // println!("Intersection in past between {:?} and {:?}", self, other);
-            return None;
-        }
-
-        Some((i_x, i_y))
-    }
-
     fn point_in_future(&self, x2: f64, y2: f64) -> bool {
         let (x1, y1, _z1) = self.at;
         let (dx, dy, _dz) = self.dir;
@@ -114,13 +70,158 @@ impl Line {
         }
         true
     }
+
+    fn normalize(&self) -> Line {
+        let (dx, dy, dz) = self.dir;
+        let len = (dx * dx + dy * dy + dz * dz).sqrt();
+        Line::new(self.at, (dx / len, dy / len, dz / len))
+    }
 }
 
 pub fn run(input: &str) -> Result<(u64, u64)> {
     let p1 = part1(input, 200_000_000_000_000.0, 400_000_000_000_000.0)?;
+    // let p2 = part2(input)?;
+    let p2 = part2_z3(input)?;
+    Ok((p1, p2))
+}
 
-    // 19521 too low
-    Ok((p1, 0))
+#[allow(unused)]
+fn part2_geo(input: &str) -> Result<u64> {
+    let lines: Vec<_> = input
+        .lines()
+        .map(|l| Ok(parse_line(l).map_err(|e| anyhow!("Parse error: {e}"))?.1))
+        .collect::<Result<Vec<_>>>()?;
+
+    // For each pair of lines, we can find their intersection and the plane that
+    // contains both of them.
+
+    // Our rock's path must either lie on this plane or intersect it at their intersection point
+
+    // Find the plane containing lines 1 and 2
+    todo!("This doesn't work because these lines don't intersect");
+    println!("Lines: {:?}", lines);
+    let plane1_normal = normalize(cross_product(
+        lines[0].normalize().dir,
+        lines[1].normalize().dir,
+    ));
+
+    // Find the plane containing lines 3 and 4
+    let plane2_normal = normalize(cross_product(
+        lines[2].normalize().dir,
+        lines[3].normalize().dir,
+    ));
+
+    println!("Plane 1 normal: {:?}", plane1_normal);
+    println!("Plane 2 normal: {:?}", plane2_normal);
+
+    // Find an intersection point b/w plane 1 and line 3
+    let intersection_point =
+        line_plane_intersection(&lines[3].normalize(), lines[0].at, plane1_normal);
+    println!("Intersection point: {:?}", intersection_point);
+
+    // Find the intersection of these two planes, which is a line
+    let intersection_dir = cross_product(plane1_normal, plane2_normal);
+
+    println!("Intersection line dir: {:?}", intersection_dir);
+
+    let test_line = Line::new((24.0, 13.0, 10.0), (-3.0, 1.0, 2.0));
+    println!(
+        "test: {:?}",
+        line_plane_intersection(&test_line, lines[0].at, plane1_normal)
+    );
+
+    println!(
+        "test: {:?}",
+        line_plane_intersection(&test_line, lines[1].at, plane1_normal)
+    );
+
+    // Find the line's time at intersection with line 5
+    // Work out where this line is at time 0
+
+    Ok(0)
+}
+
+fn part2_z3(input: &str) -> Result<u64> {
+    let lines: Vec<_> = input
+        .lines()
+        .map(|l| Ok(parse_line(l).map_err(|e| anyhow!("Parse error: {e}"))?.1))
+        .collect::<Result<Vec<_>>>()?;
+
+    let cfg = z3::Config::new();
+    let ctx = z3::Context::new(&cfg);
+    let solver = z3::Solver::new(&ctx);
+
+    let x = z3::ast::Int::new_const(&ctx, "x");
+    let y = z3::ast::Int::new_const(&ctx, "y");
+    let z = z3::ast::Int::new_const(&ctx, "z");
+    let dx = z3::ast::Int::new_const(&ctx, "dx");
+    let dy = z3::ast::Int::new_const(&ctx, "dy");
+    let dz = z3::ast::Int::new_const(&ctx, "dz");
+
+    for hailstone in lines {
+        let hs_x = z3::ast::Int::from_i64(&ctx, hailstone.at.0 as i64);
+        let hs_y = z3::ast::Int::from_i64(&ctx, hailstone.at.1 as i64);
+        let hs_z = z3::ast::Int::from_i64(&ctx, hailstone.at.2 as i64);
+        let hs_dx = z3::ast::Int::from_i64(&ctx, hailstone.dir.0 as i64);
+        let hs_dy = z3::ast::Int::from_i64(&ctx, hailstone.dir.1 as i64);
+        let hs_dz = z3::ast::Int::from_i64(&ctx, hailstone.dir.2 as i64);
+        let t_n = z3::ast::Int::fresh_const(&ctx, "t");
+
+        solver.assert(&(&hs_x + &hs_dx * &t_n)._eq(&(&x + &dx * &t_n)));
+        solver.assert(&(&hs_y + &hs_dy * &t_n)._eq(&(&y + &dy * &t_n)));
+        solver.assert(&(&hs_z + &hs_dz * &t_n)._eq(&(&z + &dz * &t_n)));
+    }
+
+    solver.check();
+    let model = solver.get_model().unwrap();
+    let x = model.get_const_interp(&x).unwrap().as_i64().unwrap();
+    let y = model.get_const_interp(&y).unwrap().as_i64().unwrap();
+    let z = model.get_const_interp(&z).unwrap().as_i64().unwrap();
+
+    // 6728171924899227280 too high
+    Ok((x + y + z) as u64)
+}
+
+fn normalize(dir: (f64, f64, f64)) -> (f64, f64, f64) {
+    let (dx, dy, dz) = dir;
+    let len = (dx * dx + dy * dy + dz * dz).sqrt();
+    (dx / len, dy / len, dz / len)
+}
+
+fn line_plane_intersection(
+    line: &Line,
+    plane_point: (f64, f64, f64),
+    plane_normal: (f64, f64, f64),
+) -> (f64, f64, f64) {
+    // Calculate the intersection point
+    let line_origin_to_plane_point = (
+        line.at.0 - plane_point.0,
+        line.at.1 - plane_point.1,
+        line.at.2 - plane_point.2,
+    );
+
+    let dot_product = line_origin_to_plane_point.0 * plane_normal.0
+        + line_origin_to_plane_point.1 * plane_normal.1
+        + line_origin_to_plane_point.2 * plane_normal.2;
+
+    let line_direction_dot_plane_normal =
+        line.dir.0 * plane_normal.0 + line.dir.1 * plane_normal.1 + line.dir.2 * plane_normal.2;
+
+    let t = -dot_product / line_direction_dot_plane_normal;
+
+    (
+        line.at.0 + t * line.dir.0,
+        line.at.1 + t * line.dir.1,
+        line.at.2 + t * line.dir.2,
+    )
+}
+
+fn cross_product(dir1: (f64, f64, f64), dir2: (f64, f64, f64)) -> (f64, f64, f64) {
+    (
+        dir1.1 * dir2.2 - dir1.2 * dir2.1,
+        dir1.2 * dir2.0 - dir1.0 * dir2.2,
+        dir1.0 * dir2.1 - dir1.1 * dir2.0,
+    )
 }
 
 fn part1(input: &str, min_xy: f64, max_xy: f64) -> Result<u64> {
@@ -190,8 +291,9 @@ fn parse_line(input: &str) -> IResult<&str, Line> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runner::test::input_test;
+    use crate::runner::test::{input_test, sample_test};
 
+    sample_test!(sample_part2, 24, None, Some(0));
     input_test!(part1, 24, Some(19523), None);
 
     #[test]
