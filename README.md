@@ -4,33 +4,39 @@ Attempting to optimize performance towards all days running in sequence in under
 
 ---
 
-## Status as of day 19:
+## Current status:
 
 ```
-Day 1:  599us
-Day 2:  212us
-Day 3:  316us
-Day 4:  348us
-Day 5:  134us
-Day 6:  15us
-Day 7:  385us
-Day 8:  438us
-Day 9:  118us
-Day 10: 215us
-Day 11: 124us
-Day 12: 2376us
-Day 13: 227us
-Day 14: 17ms
-Day 15: 476us
-Day 16: 1905us
-Day 17: 21ms
-Day 18: 101us
-Day 19: 414us
-Total time: 46ms. Remaining time budget: 953ms. 158ms/day avg remaining
+Day 1:  559us
+Day 2:  132us
+Day 3:  321us
+Day 4:  314us
+Day 5:  116us
+Day 6:  13us
+Day 7:  329us
+Day 8:  361us
+Day 9:  103us
+Day 10: 160us
+Day 11: 103us
+Day 12: 1861us
+Day 13: 201us
+Day 14: 13ms
+Day 15: 448us
+Day 16: 1491us
+Day 17: 20ms
+Day 18: 116us
+Day 19: 395us
+Day 20: 626us
+Day 21: 372us
+Day 22: 8ms
+Day 23: 132ms
+Day 24: 989us
+Day 25: 197ms
+Total time: 381ms. Remaining time budget: 618ms.
 
 % cargo build --release && hyperfine -N --warmup 10 './target/release/aoc-2023'
     Finished release [optimized] target(s) in 0.03s
 Benchmark 1: ./target/release/aoc-2023
-  Time (mean ± σ):      44.1 ms ±   1.2 ms    [User: 101.0 ms, System: 12.9 ms]
-  Range (min … max):    42.1 ms …  50.7 ms    66 runs
+  Time (mean ± σ):     383.3 ms ±   1.9 ms    [User: 407.8 ms, System: 12.5 ms]
+  Range (min … max):   380.6 ms … 386.2 ms    10 runs
 ```
