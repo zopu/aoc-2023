@@ -68,8 +68,15 @@ const DAYS: [fn() -> color_eyre::Result<()>; 25] = [
     || normal_day(day25::run, 25, 506202, 0),
 ];
 
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
+
+    #[cfg(feature = "dhat-heap")]
+    let _profiler = dhat::Profiler::new_heap();
 
     let args = match parse_args() {
         Ok(v) => v,
